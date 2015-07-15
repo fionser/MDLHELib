@@ -19,14 +19,8 @@ typedef void (*functor)(Ctxt      & op1,
 void add_with_log_noise(Ctxt                   & res,
                         const std::vector<Ctxt>& input);
 
-void add_with_log_noise(Ctxt                  & res,
-                        const std::deque<Ctxt>& input);
-
 void mul_with_log_noise(Ctxt                   & res,
                         const std::vector<Ctxt>& input);
-
-void mul_with_log_noise(Ctxt                  & res,
-                        const std::deque<Ctxt>& input);
 
 /*!
  * @param plain: packing into this polynomial
@@ -57,12 +51,6 @@ std::vector<unsigned char>fhe_convert(const T& v)
     const unsigned char *p = (const unsigned char *)str.c_str();
     std::vector<unsigned char> cpy(str.size());
     std::memcpy(cpy.data(), p, str.size());
-
-    //    std::cout << v << std::endl;
-    //    for (auto cc : cpy) {
-    //        printf("%x", cc);
-    //    }
-    //    printf("\n\n");
     return cpy;
 }
 
@@ -72,10 +60,7 @@ void fhe_convert(T& v, const std::vector<unsigned char>& bytes)
     const char *p = (const char *)bytes.data();
     std::string str(p, bytes.size());
     std::stringstream sstream(str);
-
     sstream >> v;
-
-    //    std::cout << v << std::endl;
 }
 
 void dump_FHE_setting_to_file(const std::string& file,
