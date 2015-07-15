@@ -10,19 +10,21 @@ EncVector& EncVector::pack(const Vector<long>  & vec,
 }
 
 template<>
-void EncVector::unpack(Vector<long>        & result,
+bool EncVector::unpack(Vector<long>        & result,
                        const FHESecKey     & sk,
                        const EncryptedArray& ea) const
 {
     ea.decrypt(*this, sk, result);
+    return this->isCorrect();
 }
 
 template<>
-void EncVector::unpack(Vector<NTL::ZZX>    & result,
+bool EncVector::unpack(Vector<NTL::ZZX>    & result,
                        const FHESecKey     & sk,
                        const EncryptedArray& ea) const
 {
     ea.decrypt(*this, sk, result);
+    return this->isCorrect();
 }
 
 EncVector& EncVector::dot(const EncVector     & oth,

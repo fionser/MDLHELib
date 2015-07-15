@@ -17,7 +17,7 @@ public:
                    const EncryptedArray& ea);
 
     template<typename U>
-    void unpack(Vector<U>           & result,
+    bool unpack(Vector<U>           & result,
                 const FHESecKey     & sk,
                 const EncryptedArray& ea) const;
 };
