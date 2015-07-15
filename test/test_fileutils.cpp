@@ -1,7 +1,7 @@
-#include "utils/FileUtils.cpp"
+#include "utils/FileUtils.hpp"
 
 int main() {
-    auto vec = parse_line("123 231 33");
-    std::cout << vec << std::endl;
+    auto matrix = load_csv("adult.data", 10);
+    std::cout << matrix << std::endl;
     return 0;
 }
