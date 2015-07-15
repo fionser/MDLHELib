@@ -1,5 +1,6 @@
 #include "utils/MatrixAlgebraUtils.hpp"
-
+#include "utils/FHEUtils.hpp"
+#include "fhe/replicate.h"
 #include "EncMatrix.hpp"
 #include <thread>
 namespace MDL {
@@ -62,10 +63,30 @@ EncVector EncMatrix::dot(const EncVector     & oth,
     }
 
     for (auto && wr : workers) wr.join();
+
     for (size_t r = 1; r < result.size(); r++) {
         result[0] += result[r];
     }
     return result[0];
+}
+
+EncVector EncMatrix::colum_dot(const EncVector     & oth,
+                               const EncryptedArray& ea) const
+{
+    EncVector result(this->at(0));
+
+    for (auto c = 0; c < ea.size(); c++) {
+        EncVector vec(oth);
+        replicate(ea, vec, c);
+
+        if (c >= 0) {
+            vec.multiplyBy(this->at(c));
+            result += vec;
+        } else {
+            result.multiplyBy(vec);
+        }
+    }
+    return result;
 }
 
 EncMatrix& EncMatrix::transpose(const EncryptedArray& ea)
@@ -74,25 +95,25 @@ EncMatrix& EncMatrix::transpose(const EncryptedArray& ea)
     if (ea.size() != this->size()) return *this;
 
     auto dim = ea.size();
-    EncMatrix tmp(_pk);
+    auto mat = *this;
 
-    /// first store the first row
-    tmp.resize(dim, this->at(0));
-
-    for (size_t col = 0; col < dim; col++) {
-        auto mask = make_bit_mask(ea, col);
-        tmp[col].multByConstant(mask);
-        ea.rotate(tmp[col], -col);
-
-        for (size_t row = 1; row < dim; row++) {
-            Ctxt copy(this->at(row));
-            copy.multByConstant(mask);
-            ea.rotate(copy, row - col);
-            tmp[col] += copy;
-        }
+    for (size_t row = 1; row < dim; row++) {
+        ea.rotate(mat[row], row);
     }
 
-    this->swap(tmp);
+    for (size_t col = 0; col < dim; col++) {
+        auto new_col = mat[0];
+        new_col.multByConstant(make_bit_mask(ea, col));
+
+        for (size_t row = 1; row < dim; row++) {
+            auto tmp(mat[row]);
+            tmp.multByConstant(make_bit_mask(ea, (col + row) % dim));
+            new_col += tmp;
+        }
+
+        ea.rotate(new_col, -col);
+        this->at(col) = new_col;
+    }
     return *this;
 }
 } // namespace MDL

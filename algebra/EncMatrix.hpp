@@ -21,6 +21,9 @@ public:
     EncVector dot(const EncVector     & oth,
                   const EncryptedArray& ea) const;
 
+    EncVector colum_dot(const EncVector     & oth,
+                        const EncryptedArray& ea) const;
+
     template<typename U>
     void unpack(Matrix<U>           & result,
                 const FHESecKey     & sk,
