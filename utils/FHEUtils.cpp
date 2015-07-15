@@ -1,5 +1,4 @@
 //
-
 // Created by riku on 5/5/15.
 //
 #include "FHEUtils.hpp"
@@ -55,7 +54,7 @@ void pack_into_coeff(NTL::ZZX& plain, const std::vector<long>& input,
     if (reverse) {
         NTL::SetCoeff(plain, 0, input.back());
 
-        for (long i = 0; i < sze - 1; i++)
+        for (long i = 0; i < sze - 1; i++) {
             NTL::SetCoeff(plain, n - i - 1, -input[i]);
         }
     } else {
