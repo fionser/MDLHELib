@@ -8,8 +8,7 @@
 NTL::ZZX make_bit_mask(const EncryptedArray& ea,
                        const int             index)
 {
-    assert(ea.size() > 0 && index >= 0
-           && index < ea.size());
+    assert(ea.size() > 0 && index >= 0 && index < ea.size());
     NTL::ZZX mask;
     std::vector<long> slots(ea.size(), 0);
     slots[index] = 1;

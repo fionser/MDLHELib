@@ -1,0 +1,11 @@
+include_directories(../)
+include_directories(../HELIB)
+
+add_executable(test_EncryptVector test_encvector.cpp)
+add_executable(test_Matrix test_MatrixVector.cpp)
+add_executable(test_dump test_dumpFHESetting.cpp)
+add_executable(runPCA runPCA.cpp)
+target_link_libraries(test_EncryptVector fhe algebra)
+target_link_libraries(test_Matrix algebra)
+target_link_libraries(test_dump fhe utils)
+target_link_libraries(runPCA fhe algebra utils)

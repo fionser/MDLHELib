@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
         vec[i] = NTL::RandomBnd(3);
 
         for (size_t j = 0; j < dimension; j++) {
-            mat[i][j] = NTL::RandomBnd(1000);
+            mat[i][j] = NTL::RandomBnd(10);
         }
     }
     std::cout << mat.maxEigenValue() << std::endl;
@@ -60,8 +60,10 @@ int main(int argc, char *argv[]) {
 
     {
         MDL::Vector<NTL::ZZX> vec(dimension), vec2(dimension);
-        encVec.unpack(vec, sk, ea);
-        encVec2.unpack(vec2, sk, ea);
+        TIMING_THIS(
+            encVec.unpack(vec, sk, ea);
+            encVec2.unpack(vec2, sk, ea);
+            );
         std::cout << vec2.L2() / vec.L2() << std::endl;
     }
 }
