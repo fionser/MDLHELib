@@ -1,5 +1,4 @@
 //
-
 // Created by riku on 5/5/15.
 //
 
@@ -73,4 +72,10 @@ void dump_FHE_setting_to_file(const std::string& file,
 void load_FHE_setting(const std::string& file,
                       FHEcontext       & context,
                       FHESecKey        & sk);
+
+/// Sum the first r-slots. 1 <= r <= ea.size()
+/// @param ea: EncryptedArray
+/// @param r: the fitst r slots to Sum
+/// @param ctxt: ctxt that to be sum
+void totalSums(const EncryptedArray &ea, const long r, Ctxt &ctxt);
 #endif // CCS2015_FHEUTILS_HPP
