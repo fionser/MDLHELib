@@ -1,5 +1,5 @@
 #include "Matrix.hpp"
-#include <eigen3/Eigen/EigenValues>
+#include <eigen3/Eigen/Eigenvalues>
 namespace MDL {
 template<typename T>
 size_t Matrix<T>::cols() const {
