@@ -1,4 +1,4 @@
-#include "protocol/GT.hpp"
+#include "protocol/Gt.hpp"
 #include "fhe/FHEContext.h"
 #include "fhe/NumbTh.h"
 #include "fhe/EncryptedArray.h"
