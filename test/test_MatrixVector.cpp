@@ -1,6 +1,6 @@
 #include "algebra/Matrix.hpp"
 #include "algebra/Vector.hpp"
-
+#include "utils/GreaterThanUtils.hpp"
 #include <NTL/ZZX.h>
 void test_Matrix()
 {
@@ -25,9 +25,16 @@ void test_Vector()
     assert(std::abs(vec.L2() - std::sqrt(26.0)) < 1e-9);
 }
 
+void test_random_permutation()
+{
+    auto vecs = permutated_range(10, 6);
+    auto noise = random_noise(10, 6, 10);
+}
+
 int main() {
     test_Matrix();
     test_Vector();
+    test_random_permutation();
     printf("Passed all test!\n");
     return 0;
 }

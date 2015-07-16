@@ -25,7 +25,8 @@ int main(int argc, char *argv[]) {
     timer.start();
     FHEcontext context(m, p, r);
     FHESecKey  sk(context);
-    load_FHE_setting("fhe_setting", context, sk);
+    if (m < 40000) load_FHE_setting("fhe_setting_small", context, sk);
+    else load_FHE_setting("fhe_setting_m", context, sk);
     FHEPubKey pk = sk;
     auto G = context.alMod.getFactorsOverZZ()[0];
     timer.end();
@@ -47,16 +48,16 @@ int main(int argc, char *argv[]) {
     std::cout << mat.maxEigenValue() << std::endl;
 
     MDL::EncMatrix encMat(pk);
-    MDL::EncVector encVec(pk);
+    MDL::EncVector encVec(pk), encVec2(pk);
     TIMING_THIS(
         encMat.pack(mat, ea);
         encVec.pack(vec, ea);
         );
 
-    TIMING_THIS(encVec = encMat.dot(encVec, ea); );
-    TIMING_THIS(encVec = encMat.dot(encVec, ea); );
-    TIMING_THIS(encVec = encMat.dot(encVec, ea); );
-    auto encVec2 = encMat.dot(encVec, ea);
+    TIMING_THIS(encVec = encMat.column_dot(encVec, ea); );
+    TIMING_THIS(encVec = encMat.column_dot(encVec, ea); );
+    TIMING_THIS(encVec = encMat.column_dot(encVec, ea); );
+    TIMING_THIS(encVec2 = encMat.column_dot(encVec, ea); );
 
     {
         MDL::Vector<NTL::ZZX> vec(dimension), vec2(dimension);

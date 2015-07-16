@@ -2,18 +2,18 @@
 #include "algebra/EncMatrix.hpp"
 #include "fhe/FHEcontext.h"
 #include "fhe/FHE.h"
-
+#include "utils/FHEUtils.hpp"
+#include "utils/Timer.hpp"
 void testEncVector(FHEPubKey& pk, FHESecKey& sk,
                    EncryptedArray& ea)
 {
     MDL::Vector<long> vec(ea.size());
 
     vec[0] = 1;
-    vec[1] = 3;
-
+    vec[1] = 2;
+    vec[2] = 3;
     MDL::EncVector encVector(pk);
     encVector.pack(vec, ea);
-
     MDL::Vector<long> result;
     encVector.unpack(result, sk, ea);
     assert(result[0] == vec[0]);
@@ -51,27 +51,38 @@ void testEncMatrix(FHEPubKey& pk, FHESecKey& sk,
         assert(result[0][0] == mat[0][0]);
         assert(result[1][1] == mat[1][1]);
     }
-    {
+    while (0) {
+        MDL::Timer time;
         MDL::Vector<long> result;
-        auto dot = encMatrix.dot(encVec, ea);
+        time.start();
+        auto dot = encMatrix.column_dot(encVec, ea);
+        time.end();
+        std::cout << "Mat dot Vector: " << time.second() << std::endl;
         dot.unpack(result, sk, ea);
         assert(result[0] == 5);
         assert(result[1] == 13);
     }
     {
+        MDL::Timer time;
+        time.start();
         encMatrix.transpose(ea);
-        auto dot = encMatrix.dot(encVec, ea);
+        time.end();
+        std::cout << "Mat transpose: " << time.second() << std::endl;
+        time.reset();time.start();
+        auto dot = encMatrix.column_dot(encVec, ea);
+        time.end();
+        std::cout << "Mat Vec Dot: " << time.second() << std::endl;
         MDL::Vector<long> result;
         dot.unpack(result, sk, ea);
-        assert(result[0] == 6);
-        assert(result[1] == 10);
+        assert(result[0] == 5);
+        assert(result[1] == 13);
     }
 }
 
 int main() {
-    FHEcontext context(1031, 101, 1);
+    FHEcontext context(6073, 1031, 1);
 
-    buildModChain(context, 3);
+    buildModChain(context, 5);
     FHESecKey sk(context);
     sk.GenSecKey(64);
     addSome1DMatrices(sk);

@@ -40,7 +40,7 @@ void test_dump(long m, long p, long r, long L)
     MDL::Timer timer;
 
     timer.start();
-    dump_FHE_setting_to_file("fhe_setting_small", 80, m, p, r, L);
+    dump_FHE_setting_to_file("fhe_setting_8", 80, m, p, r, L);
     timer.end();
     printf("Cost %f to dump m : %ld, p : %ld, r : %ld, L : %ld\n",
            timer.second(), m, p, r, L);
