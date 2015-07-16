@@ -1,6 +1,6 @@
 #include "algebra/EncVector.hpp"
 #include "algebra/EncMatrix.hpp"
-#include "fhe/FHEcontext.h"
+#include "fhe/FHEContext.h"
 #include "fhe/FHE.h"
 #include "utils/FHEUtils.hpp"
 #include "utils/Timer.hpp"

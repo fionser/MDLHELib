@@ -1,5 +1,5 @@
 #include "protocol/GT.hpp"
-#include "fhe/FHEcontext.h"
+#include "fhe/FHEContext.h"
 #include "fhe/NumbTh.h"
 #include "fhe/EncryptedArray.h"
 #include "utils/FHEUtils.hpp"

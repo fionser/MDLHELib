@@ -6,7 +6,7 @@
 #define CCS2015_FHEUTILS_HPP
 #include <NTL/ZZX.h>
 #include "fhe/Ctxt.h"
-#include "fhe/FHEcontext.h"
+#include "fhe/FHEContext.h"
 #include "fhe/FHE.h"
 #include <cstring>
 #include <vector>
