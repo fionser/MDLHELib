@@ -1,6 +1,6 @@
 #include "algebra/NDSS.h"
 #include "utils/FHEUtils.hpp"
-#include "utils/Timer.hpp"
+#include "utils/timer.hpp"
 #include "fhe/EncryptedArray.h"
 #include "fhe/NumbTh.h"
 #define TIMING_THIS(codes_block)                           \

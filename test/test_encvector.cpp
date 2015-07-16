@@ -3,7 +3,7 @@
 #include "fhe/FHEContext.h"
 #include "fhe/FHE.h"
 #include "utils/FHEUtils.hpp"
-#include "utils/Timer.hpp"
+#include "utils/timer.hpp"
 void testEncVector(FHEPubKey& pk, FHESecKey& sk,
                    EncryptedArray& ea)
 {
