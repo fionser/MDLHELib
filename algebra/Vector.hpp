@@ -8,6 +8,8 @@ class Vector : public std::vector<T> {
 public:
     Vector(long dims = 0) : std::vector<T>(dims) {}
 
+    Vector(long dims, const T &init) : std::vector<T>(dims, init) {}
+
     size_t dimension() const {
         return this->size();
     }

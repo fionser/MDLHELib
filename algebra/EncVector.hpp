@@ -10,8 +10,14 @@ class EncVector : public Ctxt {
 public:
     EncVector(const FHEPubKey& pk) : Ctxt(pk) {}
 
+    ~EncVector() {}
+
     EncVector& pack(const Vector<long>  & vec,
                     const EncryptedArray& ea);
+
+    static std::vector<EncVector>partition_pack(const Vector<long>  & vec,
+                                                const FHEPubKey     & pk,
+                                                const EncryptedArray& ea);
 
     EncVector& dot(const EncVector     & oth,
                    const EncryptedArray& ea);

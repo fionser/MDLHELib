@@ -70,7 +70,7 @@ EncVector EncMatrix::dot(const EncVector     & oth,
     return result[0];
 }
 
-EncVector EncMatrix::colum_dot(const EncVector     & oth,
+EncVector EncMatrix::column_dot(const EncVector     & oth,
                                const EncryptedArray& ea) const
 {
     EncVector result(this->at(0));

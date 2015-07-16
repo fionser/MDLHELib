@@ -9,6 +9,15 @@ EncVector& EncVector::pack(const Vector<long>  & vec,
     return *this;
 }
 
+std::vector<EncVector>EncVector::partition_pack(const Vector<long>  & vec,
+                                                const FHEPubKey &pk,
+                                                const EncryptedArray& ea)
+{
+    auto parts_nr = (vec.size() + ea.size() - 1) / ea.size();
+    std::vector<EncVector> ctxts(parts_nr, pk);
+    return ctxts;
+}
+
 template<>
 bool EncVector::unpack(Vector<long>        & result,
                        const FHESecKey     & sk,

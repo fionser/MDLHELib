@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     FHEcontext context(m, p, r);
     FHESecKey  sk(context);
     if (m < 40000) load_FHE_setting("fhe_setting_small", context, sk);
-    else load_FHE_setting("fhe_setting_m", context, sk);
+    else load_FHE_setting("fhe_setting_32", context, sk);
     FHEPubKey pk = sk;
     auto G = context.alMod.getFactorsOverZZ()[0];
     timer.end();

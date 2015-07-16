@@ -21,7 +21,9 @@ public:
     EncVector dot(const EncVector     & oth,
                   const EncryptedArray& ea) const;
 
-    EncVector colum_dot(const EncVector     & oth,
+    /// If the EncMatrix was transposed can use this interface for
+    /// quicker dot product.
+    EncVector column_dot(const EncVector     & oth,
                         const EncryptedArray& ea) const;
 
     template<typename U>
