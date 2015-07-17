@@ -84,13 +84,14 @@ std::pair<MDL::EncVector, long>load_file(const EncryptedArray& ea,
 std::vector<MDL::GTResult>k_percentile(const MDL::EncVector& ctxt,
                                        const FHEPubKey& pk,
                                        const EncryptedArray& ea,
-                                       long N, long k, long domain)
+                                       long N, long k)
 {
     MDL::Timer timer;
     MDL::EncVector oth(pk);
     long kpercentile =  k * N / 100;
     MDL::Vector<long> percentile(ea.size(), kpercentile);
     long plainSpace  = ea.getContext().alMod.getPPowR();
+    long domain = N;
     std::vector<MDL::GTResult> gtresults(domain);
     std::atomic<size_t> counter(0);
     std::vector<std::thread> workers;
@@ -141,11 +142,9 @@ int main(int argc, char *argv[]) {
 
     auto data      = load_file(ea, pk);
     long kpercent  = 50;
-    long domain    = 60;
     auto gtresults = k_percentile(data.first, pk, ea,
-                                  data.second,
-                                  kpercent, domain);
-    bool prev = true;
+                                  data.second, kpercent);
+    bool prev      = true;
 
     for (int d = 0; d < gtresults.size(); d++) {
         bool current = MDL::decrypt_gt_result(gtresults[d], sk, ea);
