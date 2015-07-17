@@ -10,6 +10,8 @@ public:
 
     Vector(long dims, const T &init) : std::vector<T>(dims, init) {}
 
+    T dot(const Vector<T> &oth) const;
+
     size_t dimension() const {
         return this->size();
     }
@@ -19,6 +21,8 @@ public:
     template<typename U>
     friend std::ostream& operator<<(std::ostream& os,
                                     Vector<U>   & obj);
+                                    
+    void reduce(long factor);
 };
 
 template<typename U>

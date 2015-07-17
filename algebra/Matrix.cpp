@@ -79,6 +79,20 @@ Matrix<double>Matrix<double>::dot(const Matrix<double>& oth) const {
     return prod;
 }
 
+template<>
+Matrix<long>Matrix<long>::dot(const Matrix<long>& oth) const {
+    assert(this->cols() == oth.rows());
+    auto ret(*this);
+
+    for (size_t r = 0; r < this->rows(); r++) {
+        const auto &row = this->at(r);
+        for (size_t c = 0; c < this->cols(); c++) {
+            ret[r][c] = row.dot(oth.at(c));
+        }
+    }
+    return ret;
+}
+
 template class Matrix<long>;
 template class Matrix<double>;
 } // namespace MDL

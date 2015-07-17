@@ -19,7 +19,7 @@ public:
     double        maxEigenValue() const;
     Matrix<double>inverse() const;
 
-    Matrix<double>  dot(const Matrix<double>& oth) const;
+    Matrix<T>  dot(const Matrix<T>& oth) const;
     Eigen::MatrixXd to_Eigen_matrix_format() const;
 
     void from_Eigen_matrix(const Eigen::MatrixXd& mat);
