@@ -1,8 +1,8 @@
 #ifndef ENCMATRIX_HPP
 #define ENCMATRIX_HPP
-#include "fhe/EncryptedArray.h"
-#include "fhe/Ctxt.h"
-#include "fhe/FHE.h"
+//#include "fhe/EncryptedArray.h"
+//#include "fhe/Ctxt.h"
+//#include "fhe/FHE.h"
 #include <vector>
 #include "EncVector.hpp"
 #include "Matrix.hpp"
@@ -33,7 +33,7 @@ public:
 private:
     const FHEPubKey& _pk;
     #ifdef FHE_THREADS
-    static const int WORKER_NR = 4;
+    static const int WORKER_NR = 8;
     #else // ifdef FHE_THREADS
     static const int WORKER_NR = 1;
     #endif // ifdef FHE_THREADS

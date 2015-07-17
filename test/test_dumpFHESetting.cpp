@@ -58,4 +58,5 @@ int main(int argc, char *argv[]) {
     //test_load(m, p, r, L);
 
     test_dump(m, p, r, L);
-    return 0}
+    return 0;
+}
