@@ -15,6 +15,38 @@ long WORKER_NR = 8;
 long WORKER_NR = 1;
 #endif // ifdef FHE_THREAD
 
+MDL::EncVector encrypt_variance(const MDL::Matrix<long>& data,
+                                const FHEPubKey        & pk,
+                                const EncryptedArray   & ea)
+{
+    MDL::EncVector sq_sum(pk), sum_sq(pk);
+    MDL::EncVector encRow(pk);
+    NTL::ZZX N(data.rows());
+    MDL::Timer timer;
+
+    timer.start();
+
+    for (size_t row = 0; row < data.rows(); row++) {
+        encRow.pack(data[row], ea);
+
+        if (row == 0) {
+            sum_sq = encRow;
+            encRow.square();
+            sq_sum = encRow;
+        } else {
+            sum_sq += encRow;
+            encRow.square();
+            sq_sum += encRow;
+        }
+    }
+    sq_sum.multByConstant(N);
+    sq_sum -= sum_sq;
+    timer.end();
+    printf("Encrypt & Variance of %ld records costed %fs\n", data.rows(),
+           timer.second());
+    return sq_sum;
+}
+
 std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
                                    const FHEPubKey        & pk,
                                    const EncryptedArray   & ea,
@@ -141,7 +173,8 @@ int main(int argc, char *argv[]) {
 
     auto data   = load_csv("adult.data", 100);
     auto result = load_csv("adult_result");
-    auto ctxts  = encrypt(data, pk, ea);
+
+    // auto ctxts  = encrypt(data, pk, ea);
 
     // {
     //     MDL::Vector<long> ret;
@@ -154,7 +187,7 @@ int main(int argc, char *argv[]) {
     {
         MDL::Vector<long> ret;
 
-        auto var = variance(ctxts);
+        auto var = encrypt_variance(data, pk, ea);
         var.unpack(ret, sk, ea);
         std::cout << ret << std::endl;
         std::cout << result[1] << std::endl;
