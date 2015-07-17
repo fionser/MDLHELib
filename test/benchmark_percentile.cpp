@@ -92,7 +92,7 @@ std::vector<MDL::GTResult>k_percentile(const MDL::EncVector& ctxt,
     MDL::Vector<long> percentile(ea.size(), kpercentile);
     long plainSpace  = ea.getContext().alMod.getPPowR();
     std::vector<MDL::GTResult> gtresults(domain);
-    std::atomic<size_t> counter;
+    std::atomic<size_t> counter(0);
     std::vector<std::thread> workers;
 
     oth.pack(percentile, ea);
