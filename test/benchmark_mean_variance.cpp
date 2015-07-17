@@ -17,21 +17,23 @@ const long WORKER_NR = 1;
 
 std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
                                    const FHEPubKey        & pk,
-                                   const EncryptedArray   & ea)
+                                   const EncryptedArray   & ea,
+                                   long                     rows_to_proces = 0)
 {
     MDL::Timer timer;
     std::vector<MDL::EncVector> ctxts(data.rows(), pk);
     std::vector<std::thread>    workers;
     std::atomic<size_t> counter(0);
 
+    rows_to_proces = rows_to_proces == 0 ? data.rows() : rows_to_proces;
     timer.start();
 
     for (long wr = 0; wr < WORKER_NR; wr++) {
-        workers.push_back(std::move(std::thread([&data, &ea,
+        workers.push_back(std::move(std::thread([&data, &ea, &rows_to_proces,
                                                  &counter, &ctxts]() {
             size_t next;
 
-            while ((next = counter.fetch_add(1)) < data.rows()) {
+            while ((next = counter.fetch_add(1)) < rows_to_proces) {
                 ctxts[next].pack(data[next], ea);
             }
         })));
@@ -39,7 +41,7 @@ std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
 
     for (auto && wr : workers) wr.join();
     timer.end();
-    printf("Encrypt %ld data with %ld workers costed %f sec\n", data.rows(),
+    printf("Encrypt %ld data with %ld workers costed %f sec\n", rows_to_proces,
            WORKER_NR, timer.second());
     return ctxts;
 }
@@ -89,6 +91,8 @@ MDL::EncVector variance(std::vector<MDL::EncVector>& ctxts)
     auto sum_sq = mean(ctxts);
 
     sum_sq.square();
+    MDL::Timer mult_timer;
+    timer.start();
 
     for (long wr = 0; wr < WORKER_NR; wr++) {
         workers.push_back(std::move(std::thread([&ctxts, &counter]() {
@@ -101,6 +105,8 @@ MDL::EncVector variance(std::vector<MDL::EncVector>& ctxts)
     }
 
     for (auto && wr : workers) wr.join();
+    mult_timer.end();
+    printf("Square costed %f sec\n", mult_timer.second());
     auto sq_sum = mean(ctxts);
     sq_sum.multByConstant(N);
     sq_sum.addCtxt(sum_sq, true);
@@ -132,16 +138,19 @@ int main(int argc, char *argv[]) {
 
     auto data   = load_csv("adult.data", 100);
     auto result = load_csv("adult_result");
-    auto ctxts = encrypt(data, pk, ea);
+    auto ctxts  = encrypt(data, pk, ea);
+
+    // {
+    //     MDL::Vector<long> ret;
+    //     auto summaiton = mean(ctxts);
+    //     summaiton.unpack(ret, sk, ea);
+    //     std::cout << ret << std::endl;
+    //     std::cout << result[0] << std::endl;
+    // }
+
     {
         MDL::Vector<long> ret;
-        auto summaiton = mean(ctxts);
-        summaiton.unpack(ret, sk, ea);
-        std::cout << ret << std::endl;
-        std::cout << result[0] << std::endl;
-    }
-    {
-        MDL::Vector<long> ret;
+
         auto var = variance(ctxts);
         var.unpack(ret, sk, ea);
         std::cout << ret << std::endl;
