@@ -1,5 +1,5 @@
 include_directories(../)
-include_directories(../HELIB)
+include_directories(../HElib)
 
 add_executable(test_EncryptVector test_encvector.cpp)
 add_executable(test_Matrix test_MatrixVector.cpp)
