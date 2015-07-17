@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
             ctxt.pack(plain, ea);
         }
         timer.end();
-        printf("Encryption %f ms", timer.second());
+        printf("Encryption %f ms\n", timer.second());
     }
     {
         timer.reset(); timer.start();
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
             ctxt.unpack(plain, sk, ea);
         }
         timer.end();
-        printf("Decryption %f ms", timer.second());
+        printf("Decryption %f ms\n", timer.second());
     }
     {
         timer.reset(); timer.start();
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
             tmp += tmp;
         }
         timer.end();
-        printf("Addition %f ms", timer.second());
+        printf("Addition %f ms\n", timer.second());
     }
     {
         timer.reset(); timer.start();
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
             tmp.multiplyBy(tmp);
         }
         timer.end();
-        printf("Addition %f ms", timer.second());
+        printf("Addition %f ms\n", timer.second());
     }
     {
         MDL::Vector<long> constant(ea.size(), 1);
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
             tmp.multByConstant(poly);
         }
         timer.end();
-        printf("Mult with constant %f ms", timer.second());
+        printf("Mult with constant %f ms\n", timer.second());
 
         timer.reset(); timer.start();
         for (int i = 0; i < 1000; i++) {
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
             tmp.addConstant(poly);
         }
         timer.end();
-        printf("Add with constant %f ms", timer.second());
+        printf("Add with constant %f ms\n", timer.second());
     }
 
     return 0;
