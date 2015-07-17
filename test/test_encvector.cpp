@@ -22,8 +22,8 @@ void testEncVector(FHEPubKey& pk, FHESecKey& sk,
     MDL::EncVector oth(encVector);
     auto dot = encVector.dot(oth, ea);
     dot.unpack(result, sk, ea);
-    assert(result[0] == 10);
-    assert(result[1] == 10);
+    assert(result[0] == 14);
+    assert(result[1] == 14);
 }
 
 void testEncMatrix(FHEPubKey& pk, FHESecKey& sk,
@@ -51,7 +51,7 @@ void testEncMatrix(FHEPubKey& pk, FHESecKey& sk,
         assert(result[0][0] == mat[0][0]);
         assert(result[1][1] == mat[1][1]);
     }
-    while (0) {
+    while (1) {
         MDL::Timer time;
         MDL::Vector<long> result;
         time.start();
@@ -59,8 +59,9 @@ void testEncMatrix(FHEPubKey& pk, FHESecKey& sk,
         time.end();
         std::cout << "Mat dot Vector: " << time.second() << std::endl;
         dot.unpack(result, sk, ea);
-        assert(result[0] == 5);
-        assert(result[1] == 13);
+        assert(result[0] == 6);
+        assert(result[1] == 10);
+        break;
     }
     {
         MDL::Timer time;
@@ -80,7 +81,7 @@ void testEncMatrix(FHEPubKey& pk, FHESecKey& sk,
 }
 
 int main() {
-    FHEcontext context(6073, 1031, 1);
+    FHEcontext context(4097, 283, 1);
 
     buildModChain(context, 5);
     FHESecKey sk(context);

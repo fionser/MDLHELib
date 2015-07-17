@@ -71,20 +71,33 @@ EncVector EncMatrix::dot(const EncVector     & oth,
 }
 
 EncVector EncMatrix::column_dot(const EncVector     & oth,
-                               const EncryptedArray& ea) const
+                                const EncryptedArray& ea) const
 {
-    EncVector result(this->at(0));
+    std::vector<EncVector>   parts(this->size(), _pk);
+    std::atomic<size_t>      counter(0);
+    std::vector<std::thread> workers;
 
-    for (auto c = 0; c < ea.size(); c++) {
-        EncVector vec(oth);
-        replicate(ea, vec, c);
+    for (int wr = 0; wr < WORKER_NR; wr++) {
+        workers.push_back(std::move(std::thread([&oth, &ea, &parts,
+                                                 &counter, this]() {
+                size_t c;
 
-        if (c >= 0) {
-            vec.multiplyBy(this->at(c));
-            result += vec;
-        } else {
-            result.multiplyBy(vec);
-        }
+                while ((c = counter.fetch_add(1)) < ea.size()) {
+                    EncVector vec(oth);
+                    replicate(ea, vec, c);
+                    vec.multiplyBy(this->at(c));
+                    parts[c] = vec;
+                }
+            })));
+    }
+
+    for (auto &&wr : workers) {
+        wr.join();
+    }
+
+    EncVector result(parts[0]);
+    for (size_t i = 1; i < this->size(); i++) {
+        result += parts[i];
     }
     return result;
 }
