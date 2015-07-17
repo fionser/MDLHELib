@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
             tmp.multiplyBy(tmp);
         }
         timer.end();
-        printf("Addition %f ms\n", timer.second());
+        printf("Multiplication %f ms\n", timer.second());
     }
     {
         MDL::Vector<long> constant(ea.size(), 1);

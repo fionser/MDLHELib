@@ -10,9 +10,9 @@
 #include <vector>
 
 #ifdef FHE_THREADS
-const long WORKER_NR = 8;
+long WORKER_NR = 8;
 #else // ifdef FHE_THREADS
-const long WORKER_NR = 1;
+long WORKER_NR = 1;
 #endif // ifdef FHE_THREAD
 
 std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
@@ -88,11 +88,12 @@ MDL::EncVector variance(std::vector<MDL::EncVector>& ctxts)
     std::vector<std::thread> workers;
 
     timer.start();
+    WORKER_NR = 1;
     auto sum_sq = mean(ctxts);
-
     sum_sq.square();
     MDL::Timer mult_timer;
-    timer.start();
+    mult_timer.start();
+    WORKER_NR = 8;
 
     for (long wr = 0; wr < WORKER_NR; wr++) {
         workers.push_back(std::move(std::thread([&ctxts, &counter]() {
@@ -107,7 +108,9 @@ MDL::EncVector variance(std::vector<MDL::EncVector>& ctxts)
     for (auto && wr : workers) wr.join();
     mult_timer.end();
     printf("Square costed %f sec\n", mult_timer.second());
+    WORKER_NR = 1;
     auto sq_sum = mean(ctxts);
+    WORKER_NR = 8;
     sq_sum.multByConstant(N);
     sq_sum.addCtxt(sum_sq, true);
     timer.end();
