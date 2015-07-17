@@ -15,11 +15,10 @@ GTResult GT(const GTInput       & input,
         ea.encode(poly, permutated[i]);
         result[i] -= input.Y;
         result[i].addConstant(-poly);
-        std::cout << permutated[i] << "-----" << noises[i] << "---->";
         ea.encode(poly, noises[i]);
         result[i].multByConstant(poly);
     }
-    return { result };
+    return { result }   ;
 }
 
 bool decrypt_gt_result(const GTResult      & result,
@@ -30,7 +29,6 @@ bool decrypt_gt_result(const GTResult      & result,
 
     for (const auto& ctxt : result.parts) {
         ctxt.unpack(dec, sk, ea);
-        std::cout << dec << std::endl;
         for (auto ele : dec) {
             if (ele == 0) return true;
         }
