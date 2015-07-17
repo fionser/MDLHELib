@@ -60,11 +60,10 @@ MDL::EncVector mean(const std::vector<MDL::EncVector>& ctxts)
             size_t next;
 
             while ((next = counter.fetch_add(1)) < ctxts.size()) {
-                    ct += ctxts[next];
+                ct += ctxts[next];
             }
-        },
-                                                std::ref(partials[i]))));
-}
+        }, std::ref(partials[i]))));
+    }
 
     for (auto && wr : workers) {
         wr.join();
@@ -74,9 +73,41 @@ MDL::EncVector mean(const std::vector<MDL::EncVector>& ctxts)
         partials[0] += partials[i];
     }
     timer.end();
-    printf("Mean %zd data with 1 workers costed %f sec\n", ctxts.size(),
-           timer.second());
+    printf("Mean %zd data with %ld workers costed %f sec\n", ctxts.size(),
+           WORKER_NR, timer.second());
     return partials[0];
+}
+
+MDL::EncVector variance(std::vector<MDL::EncVector>& ctxts)
+{
+    MDL::Timer timer;
+    NTL::ZZX   N(ctxts.size());
+    std::atomic<size_t> counter(0);
+    std::vector<std::thread> workers;
+
+    timer.start();
+    auto sum_sq = mean(ctxts);
+
+    sum_sq.square();
+
+    for (long wr = 0; wr < WORKER_NR; wr++) {
+        workers.push_back(std::move(std::thread([&ctxts, &counter]() {
+            size_t next;
+
+            while ((next = counter.fetch_add(1)) < ctxts.size()) {
+                ctxts[next].square();
+            }
+        })));
+    }
+
+    for (auto && wr : workers) wr.join();
+    auto sq_sum = mean(ctxts);
+    sq_sum.multByConstant(N);
+    sq_sum.addCtxt(sum_sq, true);
+    timer.end();
+    printf("Variance %zd data with %ld workers costed %f sec\n", ctxts.size(),
+           WORKER_NR, timer.second());
+    return sq_sum;
 }
 
 int main(int argc, char *argv[]) {
@@ -101,18 +132,20 @@ int main(int argc, char *argv[]) {
 
     auto data   = load_csv("adult.data", 100);
     auto result = load_csv("adult_result");
-    std::cout << data[1] << std::endl;
-    std::cout << result[1] << std::endl;
     auto ctxts = encrypt(data, pk, ea);
     {
         MDL::Vector<long> ret;
         auto summaiton = mean(ctxts);
         summaiton.unpack(ret, sk, ea);
         std::cout << ret << std::endl;
-
-        for (size_t i = 0; i < result.cols(); i++) {
-            assert(ret[i] == result[0][i]);
-        }
+        std::cout << result[0] << std::endl;
+    }
+    {
+        MDL::Vector<long> ret;
+        auto var = variance(ctxts);
+        var.unpack(ret, sk, ea);
+        std::cout << ret << std::endl;
+        std::cout << result[1] << std::endl;
     }
     return 0;
 }
