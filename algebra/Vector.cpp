@@ -2,6 +2,7 @@
 #include <NTL/ZZ.h>
 #include <NTL/ZZX.h>
 #include <cmath>
+#include <cassert>
 namespace MDL {
 template<>
 double Vector<long>::L2() const {
@@ -14,6 +15,16 @@ double Vector<long>::L2() const {
     return std::sqrt(norm);
 }
 
+template<typename T>
+void Vector<T>::reduce(long factor) {}
+
+template<>
+void Vector<long>::reduce(long factor) {
+    for (size_t i = 0; i < dimension(); i++) {
+        this->at(i) /= factor;
+    }
+}
+
 template<>
 double Vector<NTL::ZZX>::L2() const {
     NTL::ZZ summation(0);
@@ -21,6 +32,16 @@ double Vector<NTL::ZZX>::L2() const {
         summation += e[0] * e[0];
     }
     return std::sqrt(std::exp(log(summation)));
+}
+
+template<typename T>
+T Vector<T>::dot(const Vector<T> &oth) const{
+    assert(dimension() == oth.dimension());
+    T sum(0);
+    for (size_t i = 0; i < dimension(); i++) {
+        sum += this->at(i) * oth[i];
+    }
+    return sum;
 }
 
 template class Vector<long>;

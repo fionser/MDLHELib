@@ -4,8 +4,14 @@ namespace MDL {
 EncVector& EncVector::pack(const Vector<long>  & vec,
                            const EncryptedArray& ea)
 {
-    assert(vec.size() == ea.size());
-    ea.encrypt(*this, getPubKey(), vec);
+    assert(vec.size() <= ea.size());
+    if (vec.size() < ea.size()) {
+        auto tmp(vec);
+        tmp.resize(ea.size(), 0);
+        ea.encrypt(*this, getPubKey(), tmp);
+    } else {
+        ea.encrypt(*this, getPubKey(), vec);
+    }
     return *this;
 }
 
