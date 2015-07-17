@@ -1,4 +1,4 @@
-#include <fhe/FHEcontext.h>
+#include <fhe/FHEContext.h>
 #include <fhe/FHE.h>
 #include <fhe/NumbTh.h>
 #include <fhe/EncryptedArray.h>
