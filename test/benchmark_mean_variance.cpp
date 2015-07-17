@@ -10,9 +10,9 @@
 #include <vector>
 
 #ifdef FHE_THREADS
-const long WORKER_NR = 8;
+long WORKER_NR = 8;
 #else // ifdef FHE_THREADS
-const long WORKER_NR = 1;
+long WORKER_NR = 1;
 #endif // ifdef FHE_THREAD
 
 std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
