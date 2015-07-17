@@ -21,6 +21,6 @@ target_link_libraries(test_GT protocol algebra utils fhe)
 target_link_libraries(benchmark_PCA algebra utils fhe)
 target_link_libraries(benchmark_FHE_primitives algebra utils fhe)
 target_link_libraries(benchmark_mean_variance algebra utils fhe)
-target_link_libraries(benchmark_percentile algebra utils protocol fhe)
+target_link_libraries(benchmark_percentile algebra protocol utils fhe)
 
 file(COPY adult_result adult.data DESTINATION .)
