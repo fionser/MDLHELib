@@ -53,7 +53,7 @@ MDL::EncVector sum_ctxts(const std::vector<MDL::EncVector>& ctxts)
 std::pair<MDL::EncVector, long>load_file(const EncryptedArray& ea,
                                          const FHEPubKey     & pk)
 {
-    auto data = load_csv("adult.data", 11);
+    auto data = load_csv("adult.data", 2000);
     std::vector<MDL::EncVector> ctxts(data.rows(), pk);
     std::atomic<size_t> counter(0);
     std::vector<std::thread> workers;
@@ -73,25 +73,25 @@ std::pair<MDL::EncVector, long>load_file(const EncryptedArray& ea,
         })));
     }
     timer.end();
-    printf("Encrypt %ld records with %ld workers costed %f sec.\n",
-           data.rows(), WORKER_NR, timer.second());
 
     for (auto && wr : workers) wr.join();
-
+    printf("Encrypt %ld records with %ld workers costed %f sec.\n",
+           data.rows(), WORKER_NR, timer.second());
     return { sum_ctxts(ctxts), data.rows() };
 }
 
 std::vector<MDL::GTResult>k_percentile(const MDL::EncVector& ctxt,
-                                       const FHEPubKey& pk,
+                                       const FHEPubKey     & pk,
                                        const EncryptedArray& ea,
-                                       long N, long k)
+                                       long                  records_nr,
+                                       long                  domain,
+                                       long                  k)
 {
     MDL::Timer timer;
     MDL::EncVector oth(pk);
-    long kpercentile =  k * N / 100;
+    long kpercentile =  k * records_nr / 100;
     MDL::Vector<long> percentile(ea.size(), kpercentile);
     long plainSpace  = ea.getContext().alMod.getPPowR();
-    long domain = N;
     std::vector<MDL::GTResult> gtresults(domain);
     std::atomic<size_t> counter(0);
     std::vector<std::thread> workers;
@@ -100,14 +100,14 @@ std::vector<MDL::GTResult>k_percentile(const MDL::EncVector& ctxt,
     timer.start();
 
     for (long wr = 0; wr < WORKER_NR; wr++) {
-        workers.push_back(std::thread([&ctxt, &ea, &counter, &oth,
+        workers.push_back(std::thread([&ctxt, &ea, &counter, &oth, &records_nr,
                                        &domain, &plainSpace, &gtresults]() {
             size_t d;
 
             while ((d = counter.fetch_add(1)) < domain) {
                 auto tmp(ctxt);
                 replicate(ea, tmp, d);
-                MDL::GTInput input = { oth, tmp, domain, plainSpace };
+                MDL::GTInput input = { oth, tmp, records_nr, plainSpace };
                 gtresults[d] = MDL::GT(input, ea);
             }
         }));
@@ -116,8 +116,44 @@ std::vector<MDL::GTResult>k_percentile(const MDL::EncVector& ctxt,
     for (auto& wr : workers) wr.join();
     timer.end();
     printf("call GT on Domain %ld used %ld workers costed %f second\n",
-           domain, WORKER_NR, timer.second());
+           records_nr, WORKER_NR, timer.second());
     return gtresults;
+}
+
+void decrypt(const std::vector<MDL::GTResult>& gtresults,
+             const FHESecKey& sk,
+             const EncryptedArray& ea, long kpercent)
+{
+    std::vector<bool>   results(gtresults.size());
+    std::atomic<size_t> counter(0);
+    std::vector<std::thread> workers;
+    MDL::Timer timer;
+
+    timer.start();
+
+    for (int wr = 0; wr < WORKER_NR; wr++) {
+        workers.push_back(std::thread([&gtresults, &ea, &sk,
+                                       &results, &counter]() {
+            size_t next;
+
+            while ((next = counter.fetch_add(1)) < results.size()) {
+                results[next] = MDL::decrypt_gt_result(gtresults[next],
+                                                       sk,
+                                                       ea);
+            }
+        }));
+    }
+
+    for (auto && wr : workers) wr.join();
+    timer.end();
+    bool prev = true;
+
+    for (size_t i = 0; i < results.size(); i++) {
+        if (prev && !results[i]) {
+            printf("%ld-percentile is %zd\n", kpercent, i);
+            break;
+        }
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -142,18 +178,11 @@ int main(int argc, char *argv[]) {
 
     auto data      = load_file(ea, pk);
     long kpercent  = 50;
-    auto gtresults = k_percentile(data.first, pk, ea,
-                                  data.second, kpercent);
-    bool prev      = true;
-
-    for (int d = 0; d < gtresults.size(); d++) {
-        bool current = MDL::decrypt_gt_result(gtresults[d], sk, ea);
-
-        if (prev && !current) {
-            printf("%ld-percentile is %d\n", kpercent, d);
-            break;
-        }
-        prev = current;
-    }
+    auto gtresults = k_percentile(data.first,
+                                  pk, ea,
+                                  data.second,
+                                  100,
+                                  kpercent);
+    decrypt(gtresults, sk, ea, kpercent);
     return 0;
 }
