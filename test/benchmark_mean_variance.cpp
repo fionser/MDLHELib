@@ -21,7 +21,7 @@ MDL::EncVector encrypt_variance(const MDL::Matrix<long>& data,
 {
     MDL::EncVector sq_sum(pk), sum_sq(pk);
     MDL::EncVector encRow(pk);
-    NTL::ZZX N(data.rows());
+    NTL::ZZX   N(data.rows());
     MDL::Timer timer;
 
     timer.start();
@@ -40,6 +40,7 @@ MDL::EncVector encrypt_variance(const MDL::Matrix<long>& data,
         }
     }
     sq_sum.multByConstant(N);
+    sum_sq.square();
     sq_sum -= sum_sq;
     timer.end();
     printf("Encrypt & Variance of %ld records costed %fs\n", data.rows(),
@@ -171,7 +172,7 @@ int main(int argc, char *argv[]) {
     auto G = context.alMod.getFactorsOverZZ()[0];
     EncryptedArray ea(context, G);
 
-    auto data   = load_csv("adult.data", 100);
+    auto data   = load_csv("adult.data");
     auto result = load_csv("adult_result");
 
     // auto ctxts  = encrypt(data, pk, ea);
