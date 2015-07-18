@@ -120,6 +120,42 @@ std::vector<MDL::GTResult>k_percentile(const MDL::EncVector& ctxt,
     return gtresults;
 }
 
+void decrypt(const std::vector<MDL::GTResult>& gtresults,
+             const FHESecKey& sk,
+             const EncryptedArray& ea, long kpercent)
+{
+    std::vector<bool>   results(gtresults.size());
+    std::atomic<size_t> counter(0);
+    std::vector<std::thread> workers;
+    MDL::Timer timer;
+
+    timer.start();
+
+    for (int wr = 0; wr < WORKER_NR; wr++) {
+        workers.push_back(std::thread([&gtresults, &ea, &sk,
+                                       &results, &counter]() {
+            size_t next;
+
+            while ((next = counter.fetch_add(1)) < results.size()) {
+                results[next] = MDL::decrypt_gt_result(gtresults[next],
+                                                       sk,
+                                                       ea);
+            }
+        }));
+    }
+
+    for (auto && wr : workers) wr.join();
+    timer.end();
+    bool prev = true;
+
+    for (size_t i = 0; i < results.size(); i++) {
+        if (prev && !results[i]) {
+            printf("%ld-percentile is %zd\n", kpercent, i);
+            break;
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
     long m, p, r, L;
     ArgMapping argmap;
@@ -147,16 +183,6 @@ int main(int argc, char *argv[]) {
                                   data.second,
                                   100,
                                   kpercent);
-    bool prev = true;
-
-    for (int d = 0; d < gtresults.size(); d++) {
-        bool current = MDL::decrypt_gt_result(gtresults[d], sk, ea);
-
-        if (prev && !current) {
-            printf("%ld-percentile is %d\n", kpercent, d);
-            break;
-        }
-        prev = current;
-    }
+    decrypt(gtresults, sk, ea, kpercent);
     return 0;
 }
