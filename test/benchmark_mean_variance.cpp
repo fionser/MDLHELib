@@ -29,7 +29,7 @@ std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
     timer.start();
 
     for (long wr = 0; wr < WORKER_NR; wr++) {
-        workers.push_back(std::move(std::thread([&data, &ea, &to,
+        workers.push_back(std::move(std::thread([&data, &ea, &to, &from,
                                                  &counter, &ctxts]() {
             size_t next;
 
