@@ -27,18 +27,37 @@ std::vector<EncVector>EncVector::partition_pack(const Vector<long>  & vec,
 template<>
 bool EncVector::unpack(Vector<long>        & result,
                        const FHESecKey     & sk,
-                       const EncryptedArray& ea) const
+                       const EncryptedArray& ea,
+                       bool                  negate) const
 {
     ea.decrypt(*this, sk, result);
+    if (negate) {
+        auto plainSpace = ea.getContext().alMod.getPPowR();
+        auto half = plainSpace >> 1;
+        for (auto &e : result) {
+            if (e > half) e -= plainSpace;
+        }
+    }
     return this->isCorrect();
 }
 
 template<>
 bool EncVector::unpack(Vector<NTL::ZZX>    & result,
                        const FHESecKey     & sk,
-                       const EncryptedArray& ea) const
+                       const EncryptedArray& ea,
+                       bool                  negate) const
 {
     ea.decrypt(*this, sk, result);
+    if (negate) {
+        auto plainSpace = ea.getContext().alMod.getPPowR();
+        auto half = plainSpace >> 1;
+        for (auto &e : result) {
+            // if e is 0, the length of NTL::ZZX is zero
+            if (e.rep.length() > 0 && e[0] > half) {
+                e[0] -= plainSpace;
+            }
+        }
+    }
     return this->isCorrect();
 }
 

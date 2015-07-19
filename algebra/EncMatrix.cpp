@@ -18,24 +18,26 @@ EncMatrix& EncMatrix::pack(const Matrix<long>  & mat,
 template<>
 void EncMatrix::unpack(Matrix<long>        & result,
                        const FHESecKey     & sk,
-                       const EncryptedArray& ea) const
+                       const EncryptedArray& ea,
+                       bool                  negate) const
 {
     result.resize(this->size());
 
     for (size_t r = 0; r < this->size(); r++) {
-        this->at(r).unpack(result[r], sk, ea);
+        this->at(r).unpack(result[r], sk, ea, negate);
     }
 }
 
 template<>
 void EncMatrix::unpack(Matrix<NTL::ZZX>    & result,
                        const FHESecKey     & sk,
-                       const EncryptedArray& ea) const
+                       const EncryptedArray& ea,
+                       bool                  negate) const
 {
     result.resize(this->size());
 
     for (size_t r = 0; r < this->size(); r++) {
-        this->at(r).unpack(result[r], sk, ea);
+        this->at(r).unpack(result[r], sk, ea, negate);
     }
 }
 

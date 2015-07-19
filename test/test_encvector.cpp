@@ -26,6 +26,29 @@ void testEncVector(FHEPubKey& pk, FHESecKey& sk,
     assert(result[1] == 14);
 }
 
+
+void testNegateUnpack(FHEPubKey& pk, FHESecKey& sk,
+                      EncryptedArray& ea)
+{
+    MDL::Matrix<long> mat(ea.size(), ea.size());
+    MDL::EncMatrix encMat(pk);
+    mat[0][0] = 10;
+    mat[1][1] = -10;
+    encMat.pack(mat, ea);
+    {
+        MDL::Matrix<NTL::ZZX> result;
+        encMat.unpack(result, sk, ea, true);
+        assert(result[0][0] == 10);
+        assert(result[1][1] == -10);
+    }
+    {
+        MDL::Matrix<long> result;
+        encMat.unpack(result, sk, ea, true);
+        assert(result[0][0] == 10);
+        assert(result[1][1] == -10);
+    }
+}
+
 void testEncMatrix(FHEPubKey& pk, FHESecKey& sk,
                    EncryptedArray& ea)
 {
@@ -122,9 +145,10 @@ int main() {
     auto G = context.alMod.getFactorsOverZZ()[0];
     EncryptedArray ea(context, G);
     printf("slot %ld\n", ea.size());
-    // testEncVector(pk, sk, ea);
-    // testEncMatrix(pk, sk, ea);
+    testEncVector(pk, sk, ea);
+    testEncMatrix(pk, sk, ea);
     testMatrixDotMatrix(pk, sk, ea);
+    testNegateUnpack(pk, sk, ea);
     std::cout << "All Tests Passed" << std::endl;
     return 0;
 }

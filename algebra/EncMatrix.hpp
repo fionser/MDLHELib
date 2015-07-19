@@ -39,7 +39,8 @@ public:
     template<typename U>
     void unpack(Matrix<U>           & result,
                 const FHESecKey     & sk,
-                const EncryptedArray& ea) const;
+                const EncryptedArray& ea,
+                bool                  negate = false) const;
 private:
     const FHEPubKey& _pk;
     #ifdef FHE_THREADS

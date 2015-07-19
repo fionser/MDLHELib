@@ -26,7 +26,7 @@ public:
     bool unpack(Vector<U>           & result,
                 const FHESecKey     & sk,
                 const EncryptedArray& ea,
-                bool                  negated = false) const;
+                bool                  negate = false) const;
 };
 } // namespace MDL
 #endif // ENCVECTOR_HPP
