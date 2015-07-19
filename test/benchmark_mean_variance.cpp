@@ -34,7 +34,7 @@ std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
             size_t next;
 
             while ((next = counter.fetch_add(1)) < to) {
-                ctxts[next].pack(data[next], ea);
+                ctxts[next - from].pack(data[next], ea);
             }
         })));
     }
