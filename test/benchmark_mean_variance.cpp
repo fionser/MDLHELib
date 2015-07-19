@@ -14,48 +14,6 @@ long WORKER_NR = 8;
 #else // ifdef FHE_THREADS
 long WORKER_NR = 1;
 #endif // ifdef FHE_THREAD
-
-MDL::EncVector encrypt_variance(const MDL::Matrix<long>& data,
-                                const FHEPubKey        & pk,
-                                const EncryptedArray   & ea)
-{
-    MDL::EncVector sq_sum(pk), sum_sq(pk);
-    MDL::EncVector encRow(pk);
-    NTL::ZZX   N(data.rows());
-    MDL::Timer timer, encTimer, evlTimer;
-
-    timer.start();
-
-    for (size_t row = 0; row < data.rows(); row++) {
-        encTimer.start();
-        encRow.pack(data[row], ea);
-        encTimer.end();
-        evlTimer.start();
-
-        if (row == 0) {
-            sum_sq = encRow;
-            encRow.square();
-            sq_sum = encRow;
-        } else {
-            sum_sq += encRow;
-            encRow.square();
-            sq_sum += encRow;
-        }
-        evlTimer.end();
-    }
-    evlTimer.start();
-    sq_sum.multByConstant(N);
-    sum_sq.square();
-    sq_sum -= sum_sq;
-    evlTimer.end();
-    timer.end();
-
-    printf("Encrypt & Variance of %ld records totally costed %fs(%f/%f)\n",
-           data.rows(),
-           timer.second(), encTimer.second(), evlTimer.second());
-    return sq_sum;
-}
-
 std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
                                    const FHEPubKey        & pk,
                                    const EncryptedArray   & ea,
@@ -63,7 +21,7 @@ std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
                                    long                     to = 0)
 {
     MDL::Timer timer;
-    std::vector<MDL::EncVector> ctxts(data.rows(), pk);
+    std::vector<MDL::EncVector> ctxts(to - from, pk);
     std::vector<std::thread>    workers;
     std::atomic<size_t> counter(from);
 
@@ -152,12 +110,19 @@ MDL::EncVector variance(const MDL::Matrix<long>& data,
                         const FHEPubKey        & pk)
 {
     MDL::EncVector square_sum(pk), sum_square(pk);
-    NTL::ZZX N(data.rows());
+    NTL::ZZX   N(data.rows());
     const long BATCH_SIZE = 5000;
-    for (long part = 0; part * BATCH_SIZE < data.rows(); part++) {
+    MDL::Timer totalTimer, encTimer, evalTimer;
+
+    totalTimer.start();
+
+    for (long part = 0; part *BATCH_SIZE < data.rows(); part++) {
         long from  = std::min<long>(part * BATCH_SIZE, data.rows());
         long to    = std::min<long>(from + BATCH_SIZE, data.rows());
+        encTimer.start();
         auto ctxts = encrypt(data, pk, ea, from, to);
+        encTimer.end();
+        evalTimer.start();
 
         if (part > 0) {
             sum_square += mean(ctxts);
@@ -166,11 +131,20 @@ MDL::EncVector variance(const MDL::Matrix<long>& data,
             sum_square = mean(ctxts);
             square_sum = squareSum(ctxts);
         }
+        evalTimer.end();
     }
 
+    evalTimer.start();
     sum_square.square();
     square_sum.multByConstant(N);
     square_sum -= sum_square;
+    evalTimer.end();
+    totalTimer.end();
+    printf("Varaice of %zd data with %ld workers used %f(%f/%f)\n",
+           data.rows(), WORKER_NR,
+           totalTimer.second(),
+           encTimer.second(),
+           evalTimer.second());
     return square_sum;
 }
 
