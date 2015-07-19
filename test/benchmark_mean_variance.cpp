@@ -22,12 +22,15 @@ MDL::EncVector encrypt_variance(const MDL::Matrix<long>& data,
     MDL::EncVector sq_sum(pk), sum_sq(pk);
     MDL::EncVector encRow(pk);
     NTL::ZZX   N(data.rows());
-    MDL::Timer timer;
+    MDL::Timer timer, encTimer, evlTimer;
 
     timer.start();
 
     for (size_t row = 0; row < data.rows(); row++) {
+        encTimer.start();
         encRow.pack(data[row], ea);
+        encTimer.end();
+        evlTimer.start();
 
         if (row == 0) {
             sum_sq = encRow;
@@ -38,13 +41,18 @@ MDL::EncVector encrypt_variance(const MDL::Matrix<long>& data,
             encRow.square();
             sq_sum += encRow;
         }
+        evlTimer.end();
     }
+    evlTimer.start();
     sq_sum.multByConstant(N);
     sum_sq.square();
     sq_sum -= sum_sq;
+    evlTimer.end();
     timer.end();
-    printf("Encrypt & Variance of %ld records costed %fs\n", data.rows(),
-           timer.second());
+
+    printf("Encrypt & Variance of %ld records totally costed %fs(%f/%f)\n",
+           data.rows(),
+           timer.second(), encTimer.second(), evlTimer.second());
     return sq_sum;
 }
 
