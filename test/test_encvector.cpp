@@ -80,6 +80,37 @@ void testEncMatrix(FHEPubKey& pk, FHESecKey& sk,
     }
 }
 
+void testMatrixDotMatrix(const FHEPubKey &pk,
+                         const FHESecKey &sk,
+                         const EncryptedArray &ea)
+{
+    MDL::Timer timer;
+    const long dimension = 8;
+    MDL::Matrix<long> m1(dimension, dimension);
+    MDL::Matrix<long> m2(dimension, dimension);
+    MDL::EncMatrix encM1(pk);
+    MDL::EncMatrix encM2(pk);
+    m1[0][0] = 1; m1[0][1] = 2;
+    m1[1][0] = 3; m1[1][1] = 4;
+
+    m2[0][0] = 5; m2[0][1] = 6;
+    m2[1][0] = 7; m2[1][1] = 8;
+    printf("going to encrypt\n");
+    encM1.pack(m1, ea);
+    encM2.pack(m2, ea);
+    timer.start();
+    auto prod = encM1.dot(encM2, ea, dimension);
+    timer.end();
+    printf("Product two matrices with %ld dimensions costed %f sec.\n",
+           dimension, timer.second());
+    MDL::Matrix<long> result;
+    prod.unpack(result, sk, ea);
+    assert(result[0][0] == 19);
+    assert(result[0][1] == 22);
+    assert(result[1][0] == 43);
+    assert(result[1][1] == 50);
+}
+
 int main() {
     FHEcontext context(4097, 283, 1);
 
@@ -90,8 +121,10 @@ int main() {
     FHEPubKey pk = sk;
     auto G = context.alMod.getFactorsOverZZ()[0];
     EncryptedArray ea(context, G);
-    testEncVector(pk, sk, ea);
-    testEncMatrix(pk, sk, ea);
+    printf("slot %ld\n", ea.size());
+    // testEncVector(pk, sk, ea);
+    // testEncMatrix(pk, sk, ea);
+    testMatrixDotMatrix(pk, sk, ea);
     std::cout << "All Tests Passed" << std::endl;
     return 0;
 }

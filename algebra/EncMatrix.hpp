@@ -20,9 +20,16 @@ public:
 
     EncVector dot(const EncVector     & oth,
                   const EncryptedArray& ea) const;
-
+    /// To compute the product of two encrypted matrices.
+    /// Both matrices are assumed to be encrypted row-wisely.
+    /// @param oth. A row-wise encrypted matrix
+    /// @param ea. An EncryptedArray instance, to obtain the number of slots
+    /// @param col_to_process. We assume that the plaintext matrix may has
+    ///                        less columns than the number of
+    ///                        slots(i.e. ea.size()).
     EncMatrix dot(const EncMatrix     & oth,
-                  const EncryptedArray& ea) const;
+                  const EncryptedArray& ea,
+                  long col_to_process = 0) const;
 
     /// If the EncMatrix was transposed can use this interface for
     /// quicker dot product.

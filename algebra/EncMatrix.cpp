@@ -118,8 +118,7 @@ EncMatrix& EncMatrix::transpose(const EncryptedArray& ea)
         auto new_col = mat[0];
         new_col.multByConstant(make_bit_mask(ea, col));
 
-        for (size_t row = 1; row < dim; row++) {
-            auto tmp(mat[row]);
+        for (size_t row = 1; row < dim; row++) { auto tmp(mat[row]);
             tmp.multByConstant(make_bit_mask(ea, (col + row) % dim));
             new_col += tmp;
         }
@@ -128,5 +127,34 @@ EncMatrix& EncMatrix::transpose(const EncryptedArray& ea)
         this->at(col) = new_col;
     }
     return *this;
+}
+
+EncMatrix EncMatrix::dot(const EncMatrix &oth,
+                         const EncryptedArray &ea,
+                         long col_to_process) const
+{
+    /*
+       [[1 2]     [[5 6]
+       [3 4]]  *  [7 8]]
+
+       [1 1] * [5 6] + [2 2] * [7 8] = [19 22]
+       [3 3] * [5 6] + [4 4] * [7 8] = [43 50]
+     */
+    auto rows_nr = this->size();
+    col_to_process = col_to_process == 0 ? ea.size() : col_to_process;
+    assert(rows_nr == oth.size());
+    assert(col_to_process < ea.size());
+    EncMatrix result(_pk);
+    result.reserve(rows_nr);
+    for (size_t row = 0; row < rows_nr; row++) {
+        for (size_t col = 0; col < col_to_process; col++) {
+            auto tmp(this->at(row));
+            replicate(ea, tmp, col);
+            tmp.multiplyBy(oth[col]);
+            if (col > 0) result[row] += tmp;
+            else result.push_back(tmp);
+        }
+    }
+    return result;
 }
 } // namespace MDL

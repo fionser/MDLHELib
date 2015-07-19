@@ -25,7 +25,8 @@ public:
     template<typename U>
     bool unpack(Vector<U>           & result,
                 const FHESecKey     & sk,
-                const EncryptedArray& ea) const;
+                const EncryptedArray& ea,
+                bool                  negated = false) const;
 };
 } // namespace MDL
 #endif // ENCVECTOR_HPP
