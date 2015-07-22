@@ -77,7 +77,7 @@ mpair summation(const std::vector<mpair>& ctxts)
 
     for (long i = 1; i < WORKER_NR; i++) {
         mu[0]    += mu[i];
-        sigma[0] += sigma[1];
+        sigma[0] += sigma[i];
     }
     timer.end();
     return { mu[0], sigma[0] };
@@ -129,15 +129,16 @@ void benchmark(const EncryptedArray   & ea,
 }
 
 int main(int argc, char *argv[]) {
-    long m, p, r, L;
+    long m, p, r, L, R;
     ArgMapping argmap;
-
+	MDL::Timer timer;
     argmap.arg("m", m, "m");
     argmap.arg("L", L, "L");
     argmap.arg("p", p, "p");
     argmap.arg("r", r, "r");
+    argmap.arg("R", R, "R");
     argmap.parse(argc, argv);
-
+	timer.start();
     FHEcontext context(m, p, r);
     buildModChain(context, L);
     FHESecKey sk(context);
@@ -147,7 +148,9 @@ int main(int argc, char *argv[]) {
 
     auto G       = context.alMod.getFactorsOverZZ()[0];
     EncryptedArray ea(context, G);
+	timer.end();
     printf("slots %ld\n", ea.size());
-    auto data = load_csv("adult.data", 10);
+	printf("Key Gen %f\n", timer.second());
+    auto data = load_csv("adult.data", R);
     benchmark(ea, pk, sk, data);
 }
