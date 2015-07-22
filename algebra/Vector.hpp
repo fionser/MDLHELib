@@ -21,7 +21,7 @@ public:
     template<typename U>
     friend std::ostream& operator<<(std::ostream& os,
                                     Vector<U>   & obj);
-                                    
+
     void reduce(long factor);
 };
 

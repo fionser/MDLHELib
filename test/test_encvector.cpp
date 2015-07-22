@@ -15,15 +15,19 @@ void testEncVector(FHEPubKey& pk, FHESecKey& sk,
     MDL::EncVector encVector(pk);
     encVector.pack(vec, ea);
     MDL::Vector<long> result;
+    MDL::Matrix<long> Cox;
     encVector.unpack(result, sk, ea);
-    assert(result[0] == vec[0]);
-    assert(result[1] == vec[1]);
-
-    MDL::EncVector oth(encVector);
-    auto dot = encVector.dot(oth, ea);
-    dot.unpack(result, sk, ea);
-    assert(result[0] == 14);
-    assert(result[1] == 14);
+    // assert(result[0] == vec[0]);
+    // assert(result[1] == vec[1]);
+    //
+    // MDL::EncVector oth(encVector);
+    // auto dot = encVector.dot(oth, ea);
+    // dot.unpack(result, sk, ea);
+    // assert(result[0] == 14);
+    // assert(result[1] == 14);
+    auto cox = encVector.covariance(ea, 3);
+    cox.unpack(Cox, sk, ea);
+    std::cout << Cox << std::endl;
 }
 
 void testEncMatrix(FHEPubKey& pk, FHESecKey& sk,
@@ -31,7 +35,6 @@ void testEncMatrix(FHEPubKey& pk, FHESecKey& sk,
 {
     MDL::Matrix<long> mat(ea.size(), ea.size());
     MDL::Vector<long> vec(ea.size());
-
     // [[1 2]     [3
     //  [3 4]]  *  1]
     mat[0][0] = 1;
@@ -51,7 +54,7 @@ void testEncMatrix(FHEPubKey& pk, FHESecKey& sk,
         assert(result[0][0] == mat[0][0]);
         assert(result[1][1] == mat[1][1]);
     }
-    while (1) {
+    while (0) {
         MDL::Timer time;
         MDL::Vector<long> result;
         time.start();
@@ -90,8 +93,9 @@ int main() {
     FHEPubKey pk = sk;
     auto G = context.alMod.getFactorsOverZZ()[0];
     EncryptedArray ea(context, G);
+    printf("slots %ld\n", ea.size());
     testEncVector(pk, sk, ea);
-    testEncMatrix(pk, sk, ea);
+    //testEncMatrix(pk, sk, ea);
     std::cout << "All Tests Passed" << std::endl;
     return 0;
 }

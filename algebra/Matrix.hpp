@@ -40,5 +40,8 @@ std::ostream& operator<<(std::ostream& os, Matrix<U>& obj)
     std::cout << "]";
     return os;
 }
+
+template<typename T>
+Matrix<T> covariance(const Vector<T> &a, const Vector<T> &b);
 } // namespace MDL
 #endif // ifndef NDSS_MATRIX_HPP

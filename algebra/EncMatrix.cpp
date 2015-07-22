@@ -73,7 +73,7 @@ EncVector EncMatrix::dot(const EncVector     & oth,
 EncVector EncMatrix::column_dot(const EncVector     & oth,
                                 const EncryptedArray& ea) const
 {
-    std::vector<EncVector>   parts(this->size(), _pk);
+    std::vector<EncVector>   parts(this->size(), this->at(0).getPubKey());
     std::atomic<size_t>      counter(0);
     std::vector<std::thread> workers;
 
@@ -91,11 +91,12 @@ EncVector EncMatrix::column_dot(const EncVector     & oth,
             })));
     }
 
-    for (auto &&wr : workers) {
+    for (auto && wr : workers) {
         wr.join();
     }
 
     EncVector result(parts[0]);
+
     for (size_t i = 1; i < this->size(); i++) {
         result += parts[i];
     }
@@ -127,6 +128,34 @@ EncMatrix& EncMatrix::transpose(const EncryptedArray& ea)
         ea.rotate(new_col, -col);
         this->at(col) = new_col;
     }
+    return *this;
+}
+
+EncMatrix& EncMatrix::operator+=(const EncMatrix& oth)
+{
+    if (this->size() != oth.size()) {
+        fprintf(stderr, "Warnning! adding two mismatch size matrix!\n");
+        return *this;
+    }
+
+    for (size_t i = 0; i < this->size(); i++) this->at(i) += oth[i];
+    return *this;
+}
+
+EncMatrix& EncMatrix::operator-=(const EncMatrix& oth)
+{
+    if (this->size() != oth.size()) {
+        fprintf(stderr, "Warnning! adding two mismatch size matrix!\n");
+        return *this;
+    }
+
+    for (size_t i = 0; i < this->size(); i++) this->at(i) -= oth[i];
+    return *this;
+}
+
+EncMatrix& EncMatrix::multByConstant(const NTL::ZZX cons)
+{
+    for (size_t i = 0; i < this->size(); i++) this->at(i).multByConstant(cons);
     return *this;
 }
 } // namespace MDL

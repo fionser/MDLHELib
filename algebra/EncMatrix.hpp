@@ -11,7 +11,8 @@ class EncMatrix : public std::vector<EncVector> {
 public:
     EncMatrix(const FHEPubKey& pk)
         : std::vector<EncVector>(0, pk),
-        _pk(pk) {}
+           _pk(pk)
+        {}
 
     EncMatrix& pack(const Matrix<long>  & mat,
                     const EncryptedArray& ea);
@@ -33,6 +34,10 @@ public:
     void unpack(Matrix<U>           & result,
                 const FHESecKey     & sk,
                 const EncryptedArray& ea) const;
+
+    EncMatrix& operator+=(const EncMatrix &oth);
+    EncMatrix& operator-=(const EncMatrix &oth);
+    EncMatrix& multByConstant(const NTL::ZZX cons);
 private:
     const FHEPubKey& _pk;
     #ifdef FHE_THREADS
