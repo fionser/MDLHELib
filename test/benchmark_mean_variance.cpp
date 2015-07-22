@@ -21,11 +21,11 @@ std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
                                    long                     to = 0)
 {
     MDL::Timer timer;
+    to = to == 0 ? data.rows() : to;
     std::vector<MDL::EncVector> ctxts(to - from, pk);
     std::vector<std::thread>    workers;
     std::atomic<size_t> counter(from);
 
-    to = to == 0 ? data.rows() : to;
     timer.start();
 
     for (long wr = 0; wr < WORKER_NR; wr++) {
