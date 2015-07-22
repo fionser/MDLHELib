@@ -90,7 +90,8 @@ Matrix<long>Matrix<long>::dot(const Matrix<long>& oth) const {
     auto ret(*this);
 
     for (size_t r = 0; r < this->rows(); r++) {
-        const auto &row = this->at(r);
+        const auto& row = this->at(r);
+
         for (size_t c = 0; c < this->cols(); c++) {
             ret[r][c] = row.dot(oth.at(c));
         }
@@ -123,6 +124,18 @@ void Matrix<long>::random(const long &domain)
     for (auto &row : *this) {
         row.random(domain);
     }
+}
+
+Matrix<long>covariance(const Vector<long>& a, const Vector<long>& b)
+{
+    auto dim = a.dimension();
+    assert(dim == b.dimension());
+    Matrix<long> mat(dim, dim);
+    for (auto i = 0; i < dim; i++) {
+        mat[i] = a;
+        for (auto j = 0; j < dim; j++) mat[i][j] *= b[i];
+    }
+    return mat;
 }
 
 template class Matrix<long>;
