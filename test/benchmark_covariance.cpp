@@ -7,7 +7,7 @@
 #include <algebra/NDSS.h>
 #include <thread>
 #include <vector>
-typedef std::pair<MDL::EncVector, MDL::EncMatrix>mpair;
+typedef std::pair<MDL::EncVector, MDL::EncVector>mpair;
 #ifdef FHE_THREADS
 long WORKER_NR = 8;
 #else // ifdef FHE_THREADS
@@ -20,7 +20,6 @@ std::vector<mpair>encrypt(const MDL::Matrix<long>& data,
                           long                     to = 0)
 {
     to = to == 0 ? data.rows() : to;
-    printf("%ld->%ld\n", from, to);
     MDL::Timer timer;
     std::vector<mpair> ctxts(to - from, { pk, pk });
     std::vector<std::thread> workers;
@@ -34,9 +33,9 @@ std::vector<mpair>encrypt(const MDL::Matrix<long>& data,
             size_t next;
 
             while ((next = counter.fetch_add(1)) < to) {
-                auto mat = covariance(data[next], data[next]);
+                auto vec = covariance(data[next], data[next]).vector();
                 ctxts[next - from].first.pack(data[next], ea);
-                ctxts[next - from].second.pack(mat, ea);
+                ctxts[next - from].second.pack(vec, ea);
             }
         })));
     }
@@ -52,9 +51,8 @@ mpair summation(const std::vector<mpair>& ctxts)
 {
     std::vector<std::thread>    workers;
     std::vector<MDL::EncVector> mu(WORKER_NR, ctxts[0].first.getPubKey());
-    std::vector<MDL::EncMatrix> sigma;
+    std::vector<MDL::EncVector> sigma(WORKER_NR, ctxts[0].first.getPubKey());
 
-    sigma.reserve(WORKER_NR);
     std::atomic<size_t> counter(WORKER_NR);
     MDL::Timer timer;
 
@@ -62,10 +60,10 @@ mpair summation(const std::vector<mpair>& ctxts)
 
     for (long i = 0; i < WORKER_NR; i++) {
         mu[i] = ctxts[i].first;
-        sigma.push_back(ctxts[i].second);
+        sigma[i] = ctxts[i].second;
         workers.push_back(std::move(std::thread([&counter, &ctxts]
                                                     (MDL::EncVector& vec,
-                                                    MDL::EncMatrix& mat) {
+                                                    MDL::EncVector& mat) {
             size_t next;
 
             while ((next = counter.fetch_add(1)) < ctxts.size()) {
@@ -92,16 +90,9 @@ void benchmark(const EncryptedArray   & ea,
 {
     const long BATCH_SIZE = 5000;
     MDL::Timer encTimer, evalTimer;
-    encTimer.start();
-    auto ctxts = encrypt(data, pk, ea, 0,
-                         std::min<long>(1 * BATCH_SIZE, data.rows()));
-    encTimer.end();
-    evalTimer.start();
-    auto sum = summation(ctxts);
-    MDL::EncVector mu { sum.first };
-    MDL::EncMatrix sigma { sum.second };
-    evalTimer.end();
-    for (long part = 1; part *BATCH_SIZE < data.rows(); part++) {
+    MDL::EncVector mu(pk), sigma(pk);
+
+    for (long part = 0; part *BATCH_SIZE < data.rows(); part++) {
         long from  = std::min<long>(part * BATCH_SIZE, data.rows());
         long to    = std::min<long>(from + BATCH_SIZE, data.rows());
         encTimer.start();
@@ -120,12 +111,19 @@ void benchmark(const EncryptedArray   & ea,
     std::vector<long> n(ea.size(), data.rows());
     ea.encode(N, n);
     sigma.multByConstant(N);
-    sigma -= mu_mu;
     evalTimer.end();
-
-    MDL::Matrix<long> mat;
+    for (size_t col = 0; col < data.cols(); col++) {
+        ea.rotate(mu_mu[col], col * data.cols());
+        sigma -= mu_mu[col];
+    }
+    MDL::Vector<long> mat;
     sigma.unpack(mat, sk, ea, true);
-    std::cout << mat << std::endl;
+    for (int i = 0; i < data.cols(); i++) {
+        for (int j = 0; j < data.cols(); j++) {
+            std::cout << mat[i * data.cols() + j] << " ";
+        }
+        std::cout << std::endl;
+    }
     printf("Covariance of %zd data, enc %f, eval %f\n", data.rows(),
            encTimer.second(), evalTimer.second());
 }

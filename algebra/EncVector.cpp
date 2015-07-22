@@ -7,7 +7,6 @@ EncVector& EncVector::pack(const Vector<long>  & vec,
                            const EncryptedArray& ea)
 {
     assert(vec.size() <= ea.size());
-
     if (vec.size() < ea.size()) {
         auto tmp(vec);
         tmp.resize(ea.size(), 0);

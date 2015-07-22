@@ -126,6 +126,19 @@ void Matrix<long>::random(const long &domain)
     }
 }
 
+template<typename T>
+Vector<T> Matrix<T>::vector() const
+{
+    Vector<T> vec(rows() * cols());
+    auto itr = vec.begin();
+
+    for (auto &row : *this) {
+        std::copy(row.begin(), row.end(), itr);
+        std::advance(itr, cols());
+    }
+    return vec;
+}
+
 template<>
 Matrix<long>covariance(const Vector<long>& a, const Vector<long>& b)
 {
