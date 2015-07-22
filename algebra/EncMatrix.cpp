@@ -131,9 +131,9 @@ EncMatrix& EncMatrix::transpose(const EncryptedArray& ea)
     return *this;
 }
 
-EncMatrix EncMatrix::dot(const EncMatrix &oth,
-                         const EncryptedArray &ea,
-                         long col_to_process) const
+EncMatrix& EncMatrix::dot(const EncMatrix &oth,
+                          const EncryptedArray &ea,
+                          long col_to_process)
 {
     /*
        [[1 2]     [[5 6]
@@ -145,18 +145,53 @@ EncMatrix EncMatrix::dot(const EncMatrix &oth,
     auto rows_nr = this->size();
     col_to_process = col_to_process == 0 ? ea.size() : col_to_process;
     assert(rows_nr == oth.size());
-    assert(col_to_process < ea.size());
-    EncMatrix result(_pk);
-    result.reserve(rows_nr);
+    assert(col_to_process <= ea.size());
     for (size_t row = 0; row < rows_nr; row++) {
+        EncVector oneRow(_pk);
         for (size_t col = 0; col < col_to_process; col++) {
             auto tmp(this->at(row));
             replicate(ea, tmp, col);
             tmp.multiplyBy(oth[col]);
-            if (col > 0) result[row] += tmp;
-            else result.push_back(tmp);
+            if (col > 0) oneRow += tmp;
+            else oneRow = tmp;
         }
+        this->at(row) = oneRow;
     }
-    return result;
+    return *this;
+}
+
+EncMatrix& EncMatrix::operator-=(const EncMatrix &oth)
+{
+    assert(this->size() == oth.size());
+
+    for (size_t row = 0; row < oth.size(); row++) {
+        this->at(row) -= oth[row];
+    }
+    return *this;
+}
+
+EncMatrix& EncMatrix::multByConstant(const NTL::ZZX &c)
+{
+    for (auto &row : *this) {
+        row.multByConstant(c);
+    }
+    return *this;
+}
+
+EncMatrix& EncMatrix::addConstant(const std::vector<NTL::ZZX> &cons)
+{
+    assert(cons.size() == this->size());
+    for (size_t i = 0; i < cons.size(); i++) {
+        this->at(i).addConstant(cons[i]);
+    }
+    return *this;
+}
+
+EncMatrix& EncMatrix::negate()
+{
+    for (auto &row : *this) {
+        row.negate();
+    }
+    return *this;
 }
 } // namespace MDL

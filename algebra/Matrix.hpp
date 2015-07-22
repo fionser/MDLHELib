@@ -5,7 +5,8 @@
 #include <vector>
 #include <iostream>
 #include <eigen3/Eigen/Dense>
-
+#include <NTL/ZZX.h>
+class EncryptedArray;
 namespace MDL {
 template<typename T>
 class Matrix : public std::vector<Vector<T> > {
@@ -24,6 +25,12 @@ public:
 
     void from_Eigen_matrix(const Eigen::MatrixXd& mat);
 
+    std::vector<NTL::ZZX> encode(const EncryptedArray &ea) const;
+
+    Matrix& operator*=(const T &val);
+
+    void random(const T &domain);
+
     template<typename U>
     friend std::ostream& operator<<(std::ostream& os,
                                     Matrix<U>   & obj);
@@ -40,5 +47,7 @@ std::ostream& operator<<(std::ostream& os, Matrix<U>& obj)
     std::cout << "]";
     return os;
 }
+
+Matrix<long> eye(long dimension);
 } // namespace MDL
 #endif // ifndef NDSS_MATRIX_HPP

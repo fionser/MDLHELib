@@ -2,6 +2,8 @@
 #define NDSS_VECTOR_HPP
 #include <vector>
 #include <iostream>
+#include <NTL/ZZX.h>
+class EncryptedArray;
 namespace MDL {
 template<typename T>
 class Vector : public std::vector<T> {
@@ -21,8 +23,14 @@ public:
     template<typename U>
     friend std::ostream& operator<<(std::ostream& os,
                                     Vector<U>   & obj);
-                                    
+
     void reduce(long factor);
+
+    NTL::ZZX encode(const EncryptedArray &ea) const;
+
+    void random(const T &domain);
+
+    Vector& operator*=(const T &val);
 };
 
 template<typename U>

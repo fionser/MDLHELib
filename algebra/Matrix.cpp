@@ -1,4 +1,5 @@
 #include "Matrix.hpp"
+#include "fhe/EncryptedArray.h"
 #include <eigen3/Eigen/Eigenvalues>
 namespace MDL {
 template<typename T>
@@ -52,8 +53,12 @@ template<typename U>
 double Matrix<U>::maxEigenValue() const {
     Eigen::MatrixXd eig = to_Eigen_matrix_format();
     Eigen::EigenSolver<Eigen::MatrixXd> eigenSolver(eig);
-
-    return eig.eigenvalues()(0).real();
+    auto values = eig.eigenvalues();
+    double maxEig = values(0).real();
+    for (size_t i = 1; i < values.size(); i++) {
+        maxEig = std::max(maxEig, values(i).real());
+    }
+    return maxEig;
 }
 
 template<typename U>
@@ -93,6 +98,43 @@ Matrix<long>Matrix<long>::dot(const Matrix<long>& oth) const {
     return ret;
 }
 
+template<>
+std::vector<NTL::ZZX> Matrix<long>::encode(const EncryptedArray &ea) const
+{
+    std::vector<NTL::ZZX> encoded_rows;
+    for (const auto &row : *this) {
+        encoded_rows.push_back(row.encode(ea));
+    }
+    return encoded_rows;
+}
+
+template<typename T>
+Matrix<T>& Matrix<T>::operator*=(const T &val)
+{
+    for (auto &row : *this) {
+        row *= val;
+    }
+    return *this;
+}
+
+template<>
+void Matrix<long>::random(const long &domain)
+{
+    for (auto &row : *this) {
+        row.random(domain);
+    }
+}
+
 template class Matrix<long>;
 template class Matrix<double>;
+
+Matrix<long> eye(long dimension)
+{
+    Matrix<long> I(dimension, dimension);
+    for (long d = 0; d < dimension; d++) {
+        I[d][d] = 1;
+    }
+    return I;
+}
+
 } // namespace MDL

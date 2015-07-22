@@ -1,6 +1,7 @@
 #include "Vector.hpp"
 #include <NTL/ZZ.h>
 #include <NTL/ZZX.h>
+#include "fhe/EncryptedArray.h"
 #include <cmath>
 #include <cassert>
 namespace MDL {
@@ -42,6 +43,38 @@ T Vector<T>::dot(const Vector<T> &oth) const{
         sum += this->at(i) * oth[i];
     }
     return sum;
+}
+
+template<>
+NTL::ZZX Vector<long>::encode(const EncryptedArray &ea) const
+{
+    assert(this->size() <= ea.size());
+    NTL::ZZX encoded;
+    if (this->size() < ea.size()) {
+        auto tmp(*this);
+        tmp.resize(ea.size());
+        ea.encode(encoded, tmp);
+    } else {
+        ea.encode(encoded, *this);
+    }
+    return encoded;
+}
+
+template<typename T>
+Vector<T>& Vector<T>::operator*=(const T& val)
+{
+    for (auto &ele : *this) {
+        ele *= val;
+    }
+    return *this;
+}
+
+template<>
+void Vector<long>::random(const long &domain)
+{
+    for (size_t i = 0; i < size(); i++) {
+        this->at(i) = NTL::RandomBnd(domain);
+    }
 }
 
 template class Vector<long>;
