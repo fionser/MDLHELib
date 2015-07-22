@@ -6,6 +6,7 @@
 
 #include "Vector.hpp"
 namespace MDL {
+class EncMatrix;
 class EncVector : public Ctxt {
 public:
     EncVector(const FHEPubKey& pk) : Ctxt(pk) {}
@@ -27,6 +28,10 @@ public:
                 const FHESecKey     & sk,
                 const EncryptedArray& ea,
                 bool                  negate = false) const;
+
+    EncMatrix covariance(const EncryptedArray& ea,
+                         long                  actualDimension = 0);
+>>>>>>> master
 };
 } // namespace MDL
 #endif // ENCVECTOR_HPP
