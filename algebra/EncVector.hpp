@@ -31,7 +31,6 @@ public:
 
     EncMatrix covariance(const EncryptedArray& ea,
                          long                  actualDimension = 0);
->>>>>>> master
 };
 } // namespace MDL
 #endif // ENCVECTOR_HPP

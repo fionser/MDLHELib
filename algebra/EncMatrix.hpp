@@ -43,9 +43,6 @@ public:
                 const EncryptedArray& ea,
                 bool                  negate = false) const;
 
-    EncMatrix& operator-= (const EncMatrix &oth);
-
-    EncMatrix& multByConstant(const NTL::ZZX &c);
 
     EncMatrix& addConstant(const std::vector<NTL::ZZX> &cons);
 
@@ -53,7 +50,7 @@ public:
 
     EncMatrix& operator+=(const EncMatrix &oth);
     EncMatrix& operator-=(const EncMatrix &oth);
-    EncMatrix& multByConstant(const NTL::ZZX cons);
+    EncMatrix& multByConstant(const NTL::ZZX &cons);
 private:
     const FHEPubKey &_pk;
     #ifdef FHE_THREADS

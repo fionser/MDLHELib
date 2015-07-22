@@ -20,8 +20,8 @@ std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
                                    long                     from = 0,
                                    long                     to = 0)
 {
-    MDL::Timer timer;
     to = to == 0 ? data.rows() : to;
+    MDL::Timer timer;
     std::vector<MDL::EncVector> ctxts(to - from, pk);
     std::vector<std::thread>    workers;
     std::atomic<size_t> counter(from);

@@ -29,8 +29,5 @@ int main(int argc, char *argv[]) {
     vec[1] = 3;
     Ctxt ctxt(pk);
     ea.encrypt(ctxt, pk, vec);
-    // ctxt =(2, 3)
-    repliate(ctxt, ea, 0);//ctxt = 2, 2, 2, 2,
-    repliate(ctxt, ea, 1);//ctxt = 3, 3, 3, 3,
     return 0;
 }

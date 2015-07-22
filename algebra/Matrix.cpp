@@ -126,6 +126,7 @@ void Matrix<long>::random(const long &domain)
     }
 }
 
+template<>
 Matrix<long>covariance(const Vector<long>& a, const Vector<long>& b)
 {
     auto dim = a.dimension();

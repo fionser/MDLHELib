@@ -161,24 +161,6 @@ EncMatrix& EncMatrix::dot(const EncMatrix &oth,
     return *this;
 }
 
-EncMatrix& EncMatrix::operator-=(const EncMatrix &oth)
-{
-    assert(this->size() == oth.size());
-
-    for (size_t row = 0; row < oth.size(); row++) {
-        this->at(row) -= oth[row];
-    }
-    return *this;
-}
-
-EncMatrix& EncMatrix::multByConstant(const NTL::ZZX &c)
-{
-    for (auto &row : *this) {
-        row.multByConstant(c);
-    }
-    return *this;
-}
-
 EncMatrix& EncMatrix::addConstant(const std::vector<NTL::ZZX> &cons)
 {
     assert(cons.size() == this->size());
@@ -193,6 +175,7 @@ EncMatrix& EncMatrix::negate()
     for (auto &row : *this) {
         row.negate();
     }
+    return *this;
 }
 
 EncMatrix& EncMatrix::operator+=(const EncMatrix& oth)
@@ -217,7 +200,7 @@ EncMatrix& EncMatrix::operator-=(const EncMatrix& oth)
     return *this;
 }
 
-EncMatrix& EncMatrix::multByConstant(const NTL::ZZX cons)
+EncMatrix& EncMatrix::multByConstant(const NTL::ZZX &cons)
 {
     for (size_t i = 0; i < this->size(); i++) this->at(i).multByConstant(cons);
     return *this;
