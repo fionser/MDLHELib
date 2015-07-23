@@ -84,7 +84,7 @@ EncMatrix EncVector::covariance(const EncryptedArray& ea, long actualDimension)
 {
     actualDimension = actualDimension == 0 ? ea.size() : actualDimension;
     EncMatrix mat(getPubKey());
-    mat.resize(actualDimension, getPubKey());
+    mat.resize(actualDimension, *this);
     std::atomic<long> counter(0);
     std::vector<std::thread> workers;
     for (long wr = 0; wr < WORKER_NR; wr++) {
@@ -99,6 +99,7 @@ EncMatrix EncVector::covariance(const EncryptedArray& ea, long actualDimension)
             })));
     }
 
+    for (auto &&wr : workers) wr.join();
     return mat;
 }
 } // namespace MDL
