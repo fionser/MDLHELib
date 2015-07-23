@@ -17,13 +17,21 @@ double Vector<long>::L2() const {
 }
 
 template<typename T>
-void Vector<T>::reduce(long factor) {}
+Vector<double> Vector<T>::reduce(double factor) const {
+    Vector<double> vec(dimension());
+    std::transform(this->begin(), this->end(), vec.begin(),
+                   [&factor](const T &v) { return v / factor; });
+    return vec;
+}
 
 template<>
-void Vector<long>::reduce(long factor) {
-    for (size_t i = 0; i < dimension(); i++) {
-        this->at(i) /= factor;
-    }
+Vector<double> Vector<NTL::ZZX>::reduce(double factor) const {
+    Vector<double> vec(dimension());
+    std::transform(this->begin(), this->end(), vec.begin(),
+                   [&factor](const NTL::ZZX &v) {
+                   return NTL::to_long(v[0]) / factor;
+                   });
+    return vec;
 }
 
 template<>
@@ -62,7 +70,7 @@ NTL::ZZX Vector<long>::encode(const EncryptedArray &ea) const
     return encoded;
 }
 
-template<typename T>
+    template<typename T>
 Vector<T>& Vector<T>::operator*=(const T& val)
 {
     for (auto &ele : *this) {
@@ -71,7 +79,7 @@ Vector<T>& Vector<T>::operator*=(const T& val)
     return *this;
 }
 
-template<>
+    template<>
 void Vector<long>::random(const long &domain)
 {
     for (size_t i = 0; i < size(); i++) {

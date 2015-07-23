@@ -152,6 +152,17 @@ Matrix<long>covariance(const Vector<long>& a, const Vector<long>& b)
     return mat;
 }
 
+template<typename T>
+Matrix<double> Matrix<T>::reduce(const double factor) const
+{
+    Matrix<double> mat(rows(), cols());
+
+    for (auto r = 0; r < rows(); r++) {
+        mat[r] = this->at(r).reduce(factor);
+    }
+    return mat;
+}
+
 template class Matrix<long>;
 template class Matrix<double>;
 

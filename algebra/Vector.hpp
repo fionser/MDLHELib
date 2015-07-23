@@ -12,6 +12,12 @@ public:
 
     Vector(long dims, const T &init) : std::vector<T>(dims, init) {}
 
+    Vector& operator=(const std::vector<T> &oth) {
+        auto tmp(oth);
+        this->swap(tmp);
+        return *this;
+    }
+
     T dot(const Vector<T> &oth) const;
 
     size_t dimension() const {
@@ -24,7 +30,7 @@ public:
     friend std::ostream& operator<<(std::ostream& os,
                                     Vector<U>   & obj);
 
-    void reduce(long factor);
+    Vector<double> reduce(double factor) const;
 
     NTL::ZZX encode(const EncryptedArray &ea) const;
 

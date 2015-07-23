@@ -3,6 +3,7 @@
 #include "fhe/NumbTh.h"
 #include "fhe/EncryptedArray.h"
 #include "algebra/NDSS.h"
+#include "utils/timer.hpp"
 #define TIMING_THIS(codes_block)                           \
     do {                                                   \
         MDL::Timer timer;                                  \
@@ -16,20 +17,25 @@ void benchmarkLR(const FHEPubKey &pk,
                  const FHESecKey &sk,
                  const EncryptedArray &ea)
 {
-    const long dimension = 8;
-    const long mu = 8;
+    const long dimension = 5;
+    const long mu = 32;
     MDL::Matrix<long> muR0 = MDL::eye(dimension);
     MDL::Matrix<long> sigma(dimension, dimension);
     MDL::EncMatrix M(pk), R(pk);
 
-    sigma.random(3);
+    sigma[0] = vector<long>{3255, -249, 118, 252, 188};
+    sigma[1] = vector<long>{-249, 3256, -140, 1, -33};
+    sigma[2] = vector<long>{118, -140,  3256, 399, 260};
+    sigma[3] = vector<long>{252,  1, 399, 3256, -102};
+    sigma[4] = vector<long>{188,  -33, 260, -102, 3255};
+    std::cout << muR0 << std::endl;
     std::cout << sigma << std::endl;
-    std::cout << sigma.maxEigenValue() << std::endl;
-    std::cout << sigma.inverse() << std::endl;
     M.pack(sigma, ea);
     R.pack(muR0, ea);
     long MU = mu;
-    for (int itr = 0; itr < 4; itr++) {
+    MDL::Timer timer;
+    timer.start();
+    for (int itr = 0; itr < 2; itr++) {
         auto tmpR(R), tmpM(M);
         MDL::Vector<long> mag(ea.size(), 2 * MU);
         tmpR.dot(M, ea, dimension);
@@ -41,12 +47,13 @@ void benchmarkLR(const FHEPubKey &pk,
         M -= tmpM;
         MU *= MU;
     }
-
+    timer.end();
+    printf("Iteration %f\n", timer.second());
     M.unpack(muR0, sk, ea, true);
-    std::cout << muR0 << std::endl;
+    std::cout << muR0.reduce(double(MU)) << std::endl;
 
     R.unpack(muR0, sk, ea, true);
-    std::cout << muR0 << std::endl;
+    std::cout << muR0.reduce(double(MU)) << std::endl;
 }
 
 int main(int argc, char *argv[]) {

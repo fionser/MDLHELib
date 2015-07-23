@@ -31,6 +31,8 @@ public:
 
     void random(const T &domain);
 
+    Matrix<double> reduce(const double factor) const;
+
     Vector<T> vector() const;
 
     template<typename U>
