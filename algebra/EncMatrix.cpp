@@ -3,7 +3,13 @@
 #include "fhe/replicate.h"
 #include "EncMatrix.hpp"
 #include <thread>
+#include <vector>
 namespace MDL {
+#ifdef FHE_THREADS
+const long WORKER_NR = 8;
+#else
+const long WORKER_NR = 1;
+#endif
 EncMatrix& EncMatrix::pack(const Matrix<long>  & mat,
                            const EncryptedArray& ea)
 {
@@ -147,17 +153,26 @@ EncMatrix& EncMatrix::dot(const EncMatrix &oth,
     col_to_process = col_to_process == 0 ? ea.size() : col_to_process;
     assert(rows_nr == oth.size());
     assert(col_to_process <= ea.size());
-    for (size_t row = 0; row < rows_nr; row++) {
-        EncVector oneRow(_pk);
-        for (size_t col = 0; col < col_to_process; col++) {
-            auto tmp(this->at(row));
-            replicate(ea, tmp, col);
-            tmp.multiplyBy(oth[col]);
-            if (col > 0) oneRow += tmp;
-            else oneRow = tmp;
-        }
-        this->at(row) = oneRow;
+    std::vector<std::thread> workers;
+    std::atomic<long> counter(0);
+    for (long wr = 0; wr < WORKER_NR; wr++) {
+        workers.push_back(std::move(std::thread([this, &ea, &col_to_process,
+                                                &rows_nr, &oth, &counter]() {
+            long row;
+            while ((row = counter.fetch_add(1)) < rows_nr) {
+                EncVector oneRow(_pk);
+                for (size_t col = 0; col < col_to_process; col++) {
+                    auto tmp(this->at(row));
+                    replicate(ea, tmp, col);
+                    tmp.multiplyBy(oth[col]);
+                    if (col > 0) oneRow += tmp;
+                    else oneRow = tmp;
+                }
+                this->at(row) = oneRow;
+            } })));
     }
+
+    for (auto &&wr : workers) wr.join();
     return *this;
 }
 

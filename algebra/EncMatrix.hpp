@@ -53,11 +53,6 @@ public:
     EncMatrix& multByConstant(const NTL::ZZX &cons);
 private:
     const FHEPubKey &_pk;
-    #ifdef FHE_THREADS
-    static const int WORKER_NR = 4;
-    #else // ifdef FHE_THREADS
-    static const int WORKER_NR = 1;
-    #endif // ifdef FHE_THREADS
 };
 }
 #endif // ENCMATRIX_HPP
