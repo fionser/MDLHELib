@@ -4,15 +4,8 @@
 #include "fhe/EncryptedArray.h"
 #include "algebra/NDSS.h"
 #include "utils/timer.hpp"
-#define TIMING_THIS(codes_block)                           \
-    do {                                                   \
-        MDL::Timer timer;                                  \
-        timer.start();                                     \
-        codes_block                                        \
-        timer.end();                                       \
-        printf("This codes run %f sec\n", timer.second()); \
-    } while (0)
-
+#include "utils/FileUtils.hpp"
+#include <thread>
 void benchmarkLR(const FHEPubKey &pk,
                  const FHESecKey &sk,
                  const EncryptedArray &ea)
@@ -20,31 +13,37 @@ void benchmarkLR(const FHEPubKey &pk,
     const long dimension = 5;
     const long mu = 3255;
     MDL::Matrix<long> muR0 = MDL::eye(dimension);
-    MDL::Matrix<long> sigma(dimension, dimension);
+    MDL::Matrix<long> sigma = load_csv("covariance.data");
     MDL::EncMatrix M(pk), R(pk);
 
-    sigma[0] = vector<long>{3255, -249, 118, 252, 188};
-    sigma[1] = vector<long>{-249, 3256, -140, 1, -33};
-    sigma[2] = vector<long>{118, -140,  3256, 399, 260};
-    sigma[3] = vector<long>{252,  1, 399, 3256, -102};
-    sigma[4] = vector<long>{188,  -33, 260, -102, 3255};
     std::cout << muR0 << std::endl;
     std::cout << sigma << std::endl;
     M.pack(sigma, ea);
     R.pack(muR0, ea);
     long MU = mu;
     MDL::Timer timer;
+    std::cout << sigma.inverse() << std::endl;
     timer.start();
     for (int itr = 0; itr < 2; itr++) {
         auto tmpR(R), tmpM(M);
         MDL::Vector<long> mag(ea.size(), 2 * MU);
-        tmpR.dot(M, ea, dimension);
-        R.multByConstant(mag.encode(ea));
-        R -= tmpR;
 
-        tmpM.dot(M, ea, dimension);
-        M.multByConstant(mag.encode(ea));
-        M -= tmpM;
+	std::thread computeR([&tmpR, &ea, &dimension,
+                              &R, &M, &mag](){
+		tmpR.dot(M, ea, dimension);
+		R.multByConstant(mag.encode(ea));
+		R -= tmpR;
+	});
+
+	std::thread computeM([&tmpM, &ea, &dimension,
+                              &M, &mag](){
+		tmpM.dot(M, ea, dimension);
+		M.multByConstant(mag.encode(ea));
+	});
+
+	computeR.join();
+        computeM.join();
+	M -= tmpM;
         MU *= MU;
     }
     timer.end();
