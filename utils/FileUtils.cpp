@@ -43,6 +43,7 @@ MDL::Matrix<long>load_csv(const std::string& file, long max_lines)
         std::getline(stream, line);
 
         if (line.empty()) continue;
+        if (line[0] == '#') continue;
         mat.push_back(parse_line(line));
     }
     return mat;
