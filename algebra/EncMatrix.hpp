@@ -35,7 +35,8 @@ public:
     /// If the EncMatrix was transposed can use this interface for
     /// quicker dot product.
     EncVector column_dot(const EncVector     & oth,
-                         const EncryptedArray& ea) const;
+                         const EncryptedArray& ea,
+                         long                  col_to_process = 0) const;
 
     template<typename U>
     void unpack(Matrix<U>           & result,
