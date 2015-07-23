@@ -40,18 +40,6 @@ public:
                                     Matrix<U>   & obj);
 };
 
-template<typename U>
-std::ostream& operator<<(std::ostream& os, Matrix<U>& obj)
-{
-    std::cout << "[" << std::endl;
-
-    for (auto& row : obj) {
-        std::cout << row << std::endl;
-    }
-    std::cout << "]";
-    return os;
-}
-
 Matrix<long> eye(long dimension);
 
 template<typename T>

@@ -175,4 +175,27 @@ Matrix<long> eye(long dimension)
     return I;
 }
 
+template<>
+std::ostream& operator<<(std::ostream& os, Matrix<long>& obj)
+{
+    std::cout << "[" << std::endl;
+
+    for (auto& row : obj) {
+        std::cout << row << std::endl;
+    }
+    std::cout << "]";
+    return os;
+}
+
+template<>
+std::ostream& operator<<(std::ostream& os, Matrix<double>& obj)
+{
+    std::cout << "[" << std::endl;
+
+    for (auto& row : obj) {
+        std::cout << row << std::endl;
+    }
+    std::cout << "]";
+    return os;
+}
 } // namespace MDL

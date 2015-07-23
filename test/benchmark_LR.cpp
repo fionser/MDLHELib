@@ -18,7 +18,7 @@ void benchmarkLR(const FHEPubKey &pk,
                  const EncryptedArray &ea)
 {
     const long dimension = 5;
-    const long mu = 32;
+    const long mu = 3255;
     MDL::Matrix<long> muR0 = MDL::eye(dimension);
     MDL::Matrix<long> sigma(dimension, dimension);
     MDL::EncMatrix M(pk), R(pk);
@@ -48,6 +48,7 @@ void benchmarkLR(const FHEPubKey &pk,
         MU *= MU;
     }
     timer.end();
+    std::cout << MU << std::endl;
     printf("Iteration %f\n", timer.second());
     M.unpack(muR0, sk, ea, true);
     std::cout << muR0.reduce(double(MU)) << std::endl;
