@@ -111,7 +111,7 @@ MDL::EncVector variance(const MDL::Matrix<long>& data,
 {
     MDL::EncVector square_sum(pk), sum_square(pk);
     NTL::ZZX   N(data.rows());
-    const long BATCH_SIZE = 5000;
+    const long BATCH_SIZE = 2500;
     MDL::Timer totalTimer, encTimer, evalTimer;
 
     totalTimer.start();
@@ -146,6 +146,33 @@ MDL::EncVector variance(const MDL::Matrix<long>& data,
            encTimer.second(),
            evalTimer.second());
     return square_sum;
+}
+
+MDL::EncVector average(const MDL::Matrix<long>& data,
+                       const EncryptedArray &ea,
+                       const FHEPubKey &pk)
+{
+    MDL::EncVector result(pk);
+    const long BATCH_SIZE = 2500;
+    MDL::Timer encTimer, evalTimer;
+
+    for (long part = 0; part *BATCH_SIZE < data.rows(); part++) {
+        long from  = std::min<long>(part * BATCH_SIZE, data.rows());
+        long to    = std::min<long>(from + BATCH_SIZE, data.rows());
+        encTimer.start();
+        auto ctxts = encrypt(data, pk, ea, from, to);
+        encTimer.end();
+        evalTimer.start();
+        if (part > 0) {
+            result += mean(ctxts);
+        } else {
+            result = mean(ctxts);
+        }
+        evalTimer.end();
+    }
+    printf("Mean of %zd data with %ld workders used Enc(%f)/Eval(%f)\n",
+           data.rows(), WORKER_NR, encTimer.second(), evalTimer.second());
+    return result;
 }
 
 int main(int argc, char *argv[]) {
