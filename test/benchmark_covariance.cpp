@@ -111,11 +111,12 @@ void benchmark(const EncryptedArray   & ea,
     std::vector<long> n(ea.size(), data.rows());
     ea.encode(N, n);
     sigma.multByConstant(N);
-    evalTimer.end();
     for (size_t col = 0; col < data.cols(); col++) {
         ea.rotate(mu_mu[col], col * data.cols());
         sigma -= mu_mu[col];
     }
+    evalTimer.end();
+
     MDL::Vector<long> mat;
     sigma.unpack(mat, sk, ea, true);
     for (int i = 0; i < data.cols(); i++) {

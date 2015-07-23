@@ -2,7 +2,15 @@
 #include "EncMatrix.hpp"
 #include "fhe/replicate.h"
 #include <NTL/ZZX.h>
+#include <vector>
+#include <atomic>
+#include <thread>
 namespace MDL {
+#ifdef FHE_THREAD
+const long WORKER_NR = 8;
+#else
+const long WORKER_NR = 1;
+#endif
 EncVector& EncVector::pack(const Vector<long>  & vec,
                            const EncryptedArray& ea)
 {
@@ -74,14 +82,23 @@ EncVector& EncVector::dot(const EncVector     & oth,
 
 EncMatrix EncVector::covariance(const EncryptedArray& ea, long actualDimension)
 {
-    EncMatrix mat(getPubKey());
     actualDimension = actualDimension == 0 ? ea.size() : actualDimension;
-    for (size_t i = 0; i < actualDimension; i++) {
-        mat.push_back(*this);
-        auto tmp(*this);
-        replicate(ea, tmp, i);
-        mat[i].multiplyBy(tmp);
+    EncMatrix mat(getPubKey());
+    mat.resize(actualDimension, getPubKey());
+    std::atomic<long> counter(0);
+    std::vector<std::thread> workers;
+    for (long wr = 0; wr < WORKER_NR; wr++) {
+        workers.push_back(std::move(std::thread([&counter, &actualDimension,
+                                                &mat, &ea, this]() {
+            long next;
+            while((next = counter.fetch_add(1)) < actualDimension) {
+                auto tmp(*this);
+                replicate(ea, tmp, next);
+                mat[next].multiplyBy(tmp);
+            }
+            })));
     }
+
     return mat;
 }
 } // namespace MDL
