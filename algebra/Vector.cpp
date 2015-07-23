@@ -4,6 +4,7 @@
 #include "fhe/EncryptedArray.h"
 #include <cmath>
 #include <cassert>
+#include <algorithm>
 namespace MDL {
 template<>
 double Vector<long>::L2() const {
@@ -39,7 +40,7 @@ double Vector<NTL::ZZX>::L2() const {
     NTL::ZZ summation(0);
 
     for (auto& e : *this) {
-        summation += e[0] * e[0];
+		if (e.rep.length() > 0) summation += e[0] * e[0];
     }
     return std::sqrt(std::exp(log(summation)));
 }
@@ -70,7 +71,7 @@ NTL::ZZX Vector<long>::encode(const EncryptedArray &ea) const
     return encoded;
 }
 
-    template<typename T>
+template<typename T>
 Vector<T>& Vector<T>::operator*=(const T& val)
 {
     for (auto &ele : *this) {

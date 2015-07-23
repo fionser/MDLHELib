@@ -99,6 +99,7 @@ EncMatrix EncVector::covariance(const EncryptedArray& ea, long actualDimension)
             })));
     }
 
+	for (auto &&wr : workers) wr.join();
     return mat;
 }
 } // namespace MDL
