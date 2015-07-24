@@ -41,8 +41,8 @@ std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
 
     for (auto && wr : workers) wr.join();
     timer.end();
-    printf("Encrypt %ld data with %ld workers costed %f sec\n", to - from,
-           WORKER_NR, timer.second());
+    //printf("Encrypt %ld data with %ld workers costed %f sec\n", to - from,
+    //       WORKER_NR, timer.second());
     return ctxts;
 }
 
@@ -75,8 +75,8 @@ MDL::EncVector mean(const std::vector<MDL::EncVector>& ctxts)
         partials[0] += partials[i];
     }
     timer.end();
-    printf("Sum %zd data with %ld workers costed %f sec\n", ctxts.size(),
-           WORKER_NR, timer.second());
+    //printf("Sum %zd data with %ld workers costed %f sec\n", ctxts.size(),
+    //       WORKER_NR, timer.second());
     return partials[0];
 }
 
@@ -93,13 +93,15 @@ MDL::EncVector squareSum(std::vector<MDL::EncVector>& ctxts)
             size_t next;
 
             while ((next = counter.fetch_add(1)) < ctxts.size()) {
-                ctxts[next].square();
+                //ctxts[next].square();
+				ctxts[next] *= ctxts[next];
             }
         })));
     }
 
     for (auto && wr : workers) wr.join();
     auto sq_sum = mean(ctxts);
+	sq_sum.reLinearize();
     timer.end();
     printf("Square Sum costed %f sec\n", timer.second());
     return sq_sum;
@@ -132,6 +134,7 @@ MDL::EncVector variance(const MDL::Matrix<long>& data,
             square_sum = squareSum(ctxts);
         }
         evalTimer.end();
+		printf("%ld %f %f\n", to, encTimer.second(), evalTimer.second());
     }
 
     evalTimer.start();
@@ -169,6 +172,7 @@ MDL::EncVector average(const MDL::Matrix<long>& data,
             result = mean(ctxts);
         }
         evalTimer.end();
+		printf("%ld %f %f\n", to, encTimer.second(), evalTimer.second());
     }
     printf("Mean of %zd data with %ld workders used Enc(%f)/Eval(%f)\n",
            data.rows(), WORKER_NR, encTimer.second(), evalTimer.second());
@@ -194,7 +198,7 @@ int main(int argc, char *argv[]) {
 
     auto G = context.alMod.getFactorsOverZZ()[0];
     EncryptedArray ea(context, G);
-
+	printf("slots %ld\n", ea.size());
     auto data   = load_csv("adult.data");
     auto result = load_csv("adult_result");
 
