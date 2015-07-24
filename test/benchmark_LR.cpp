@@ -10,24 +10,24 @@ void benchmarkLR(const FHEPubKey &pk,
                  const FHESecKey &sk,
                  const EncryptedArray &ea)
 {
-    const long dimension = 5;
-    const long mu = 3255;
+    const long mu = 5652;
+    MDL::Matrix<long> sigma = load_csv("covariance2.data");
+    const long dimension = sigma.cols();
     MDL::Matrix<long> muR0 = MDL::eye(dimension);
-    MDL::Matrix<long> sigma = load_csv("covariance.data");
     MDL::EncMatrix M(pk), R(pk);
 
-    std::cout << muR0 << std::endl;
     std::cout << sigma << std::endl;
     M.pack(sigma, ea);
     R.pack(muR0, ea);
     long MU = mu;
     MDL::Timer timer;
-    std::cout << sigma.inverse() << std::endl;
+    for (auto &row : sigma.inverse()) {
+    	std::cout << row << std::endl;
+    } 
     timer.start();
     for (int itr = 0; itr < 2; itr++) {
         auto tmpR(R), tmpM(M);
         MDL::Vector<long> mag(ea.size(), 2 * MU);
-
 	std::thread computeR([&tmpR, &ea, &dimension,
                               &R, &M, &mag](){
 		tmpR.dot(M, ea, dimension);
@@ -38,11 +38,18 @@ void benchmarkLR(const FHEPubKey &pk,
 	std::thread computeM([&tmpM, &ea, &dimension,
                               &M, &mag](){
 		tmpM.dot(M, ea, dimension);
-		M.multByConstant(mag.encode(ea));
 	});
 
 	computeR.join();
         computeM.join();
+	/*
+	tmpR.dot(M, ea, dimension);
+	R.multByConstant(mag.encode(ea));
+	R -= tmpR;
+
+	tmpM.dot(M, ea, dimension);
+	 */
+	M.multByConstant(mag.encode(ea));
 	M -= tmpM;
         MU *= MU;
     }
@@ -50,10 +57,14 @@ void benchmarkLR(const FHEPubKey &pk,
     std::cout << MU << std::endl;
     printf("Iteration %f\n", timer.second());
     M.unpack(muR0, sk, ea, true);
-    std::cout << muR0.reduce(double(MU)) << std::endl;
-
+    for (auto &row : muR0.reduce(double(MU))) {
+    	std::cout << row << std::endl;
+    } 
+    std::cout << "================" << std::endl;
     R.unpack(muR0, sk, ea, true);
-    std::cout << muR0.reduce(double(MU)) << std::endl;
+    for (auto &row : muR0.reduce(double(MU))) {
+    	std::cout << row << std::endl;
+    } 
 }
 
 int main(int argc, char *argv[]) {

@@ -3,6 +3,7 @@
 #include "utils/timer.hpp"
 #include "fhe/EncryptedArray.h"
 #include "fhe/NumbTh.h"
+#include "utils/FileUtils.hpp"
 #define TIMING_THIS(codes_block)                           \
     do {                                                   \
         MDL::Timer timer;                                  \
@@ -15,49 +16,44 @@
 int main(int argc, char *argv[]) {
     long m, p, r, L;
     ArgMapping argmap;
-    MDL::Timer timer;
+    MDL::Timer keyTimer, totalTimer;
 
     argmap.arg("m", m, "m");
     argmap.arg("L", L, "L");
     argmap.arg("p", p, "p");
     argmap.arg("r", r, "r");
     argmap.parse(argc, argv);
-    timer.start();
-    FHEcontext context(m, p, r);
-    FHESecKey  sk(context);
-    if (m < 40000) load_FHE_setting("fhe_setting_small", context, sk);
-    else load_FHE_setting("fhe_setting_32", context, sk);
-    FHEPubKey pk = sk;
-    auto G = context.alMod.getFactorsOverZZ()[0];
-    timer.end();
-    printf("Setup %f\n", timer.second());
-
-    EncryptedArray ea(context, G);
-    long dimension = ea.size();
-    MDL::Matrix<long> mat(dimension, dimension);
+    MDL::Matrix<long> mat = load_csv("covariance3.data");
+    long dimension = mat.cols();
     MDL::Vector<long> vec(dimension), vec2(dimension);
     printf("Dimension %ld\n", dimension);
 
-    for (size_t i = 0; i < dimension; i++) {
-        vec[i] = NTL::RandomBnd(3);
-
-        for (size_t j = 0; j < dimension; j++) {
-            mat[i][j] = NTL::RandomBnd(10);
-        }
-    }
+    for (size_t i = 0; i < dimension; i++) vec[i] = NTL::RandomBnd(3);
     std::cout << mat.maxEigenValue() << std::endl;
+    totalTimer.start();
+    keyTimer.start();
+    FHEcontext context(m, p, r);
+    buildModChain(context, L);
+    FHESecKey  sk(context);
+    sk.GenSecKey(64);	
+    addSome1DMatrices(sk);
+    FHEPubKey pk = sk;
+    auto G = context.alMod.getFactorsOverZZ()[0];
+    keyTimer.end();
+    printf("KeyGen %f\n", keyTimer.second());
 
-    MDL::EncMatrix encMat(pk);
+    EncryptedArray ea(context, G);
+        MDL::EncMatrix encMat(pk);
     MDL::EncVector encVec(pk), encVec2(pk);
     TIMING_THIS(
         encMat.pack(mat, ea);
         encVec.pack(vec, ea);
         );
 
-    TIMING_THIS(encVec = encMat.column_dot(encVec, ea); );
-    TIMING_THIS(encVec = encMat.column_dot(encVec, ea); );
-    TIMING_THIS(encVec = encMat.column_dot(encVec, ea); );
-    TIMING_THIS(encVec2 = encMat.column_dot(encVec, ea); );
+    TIMING_THIS(encVec  = encMat.column_dot(encVec, ea, dimension); );
+    TIMING_THIS(encVec  = encMat.column_dot(encVec, ea, dimension); );
+    TIMING_THIS(encVec  = encMat.column_dot(encVec, ea, dimension); );
+    TIMING_THIS(encVec2 = encMat.column_dot(encVec, ea, dimension); );
 
     {
         MDL::Vector<NTL::ZZX> vec(dimension), vec2(dimension);
@@ -67,4 +63,6 @@ int main(int argc, char *argv[]) {
             );
         std::cout << vec2.L2() / vec.L2() << std::endl;
     }
+    totalTimer.end();
+    printf("total %f\n", totalTimer.second());
 }
