@@ -17,8 +17,8 @@ void testEncVector(FHEPubKey& pk, FHESecKey& sk,
     MDL::Vector<long> result;
     MDL::Matrix<long> Cox;
     encVector.unpack(result, sk, ea);
-    // assert(result[0] == vec[0]);
-    // assert(result[1] == vec[1]);
+    assert(result[0] == vec[0]);
+    assert(result[1] == vec[1]);
     //
     // MDL::EncVector oth(encVector);
     // auto dot = encVector.dot(oth, ea);
@@ -152,9 +152,6 @@ int main() {
     testEncMatrix(pk, sk, ea);
     testMatrixDotMatrix(pk, sk, ea);
     testNegateUnpack(pk, sk, ea);
-    printf("slots %ld\n", ea.size());
-    testEncVector(pk, sk, ea);
-    //testEncMatrix(pk, sk, ea);
     std::cout << "All Tests Passed" << std::endl;
     return 0;
 }
