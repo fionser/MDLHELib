@@ -88,12 +88,12 @@ template<>
 Matrix<long>Matrix<long>::dot(const Matrix<long>& oth) const {
     assert(this->cols() == oth.rows());
     auto ret(*this);
-
+    auto othT = oth.transpose();
     for (size_t r = 0; r < this->rows(); r++) {
         const auto& row = this->at(r);
 
         for (size_t c = 0; c < this->cols(); c++) {
-            ret[r][c] = row.dot(oth.at(c));
+            ret[r][c] = row.dot(othT.at(c));
         }
     }
     return ret;
@@ -159,6 +159,34 @@ Matrix<double> Matrix<T>::reduce(const double factor) const
 
     for (auto r = 0; r < rows(); r++) {
         mat[r] = this->at(r).reduce(factor);
+    }
+    return mat;
+}
+
+template<typename T>
+Matrix<T> Matrix<T>::submatrix(long r1, long r2, long c1, long c2) const
+{
+    c2 = c2 == 0 ? cols() - 1 : c2;
+    if (r2 <= r1 || r2 >= this->size() || c2 <= c1 || c2 > this->at(0).size()) {
+        std::cerr << "Invalid submatrix arguments" << std::endl;
+        return *this;
+    }
+
+    Matrix<T> sub(r2 - r1 + 1, 0);
+    for (long r = r1; r <= r2; r++) {
+        sub[r - r1] = this->at(r).subvector(c1, c2);
+    }
+    return sub;
+}
+
+template<typename T>
+Matrix<T> Matrix<T>::transpose() const
+{
+    Matrix<T> mat(cols(), rows());
+    for (size_t r = 0; r < rows(); r++) {
+        for (size_t c = 0; c < cols(); c++) {
+            mat[c][r] = this->at(r).at(c);
+        }
     }
     return mat;
 }

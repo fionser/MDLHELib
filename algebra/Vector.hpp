@@ -37,6 +37,8 @@ public:
     void random(const T &domain);
 
     Vector& operator*=(const T &val);
+
+    Vector<T> subvector(long startIndex, long endIndex) const;
 };
 
 template<typename U>

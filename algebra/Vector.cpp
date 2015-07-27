@@ -56,6 +56,23 @@ T Vector<T>::dot(const Vector<T>& oth) const {
     return sum;
 }
 
+template<typename T>
+Vector<T> Vector<T>::subvector(long startIndex, long endIndex) const
+{
+    if (endIndex <= startIndex || endIndex >= this->size()) {
+        std::cerr << "Invalid subvector arguments" << std::endl;
+        return *this;
+    }
+    Vector<T> sub(endIndex - startIndex + 1);
+    auto start = this->begin();
+    auto end = start;
+
+    std::advance(start, startIndex);
+    std::advance(end, endIndex + 1);
+    std::copy(start, end, sub.begin());
+    return sub;
+}
+
 template<>
 NTL::ZZX Vector<long>::encode(const EncryptedArray &ea) const
 {
@@ -80,26 +97,13 @@ Vector<T>& Vector<T>::operator*=(const T& val)
     return *this;
 }
 
-    template<>
+template<>
 void Vector<long>::random(const long &domain)
 {
     for (size_t i = 0; i < size(); i++) {
         this->at(i) = NTL::RandomBnd(domain);
     }
 }
-// template<typename T>
-// Matrix<T>Vector<T>::covariance(const Vector<T>& oth) const
-// {
-//     assert(dimension() == oth.dimension());
-//     Matrix<T> mat(dimension(), dimension());
-//     for (size_t i = 0; i < dimension(); i++) {
-//         mat[i] = *this;
-//         for (size_t j = 0; j < dimension(); j++) {
-//             mat[i][j] *= oth[j];
-//         }
-//     }
-//     return mat;
-// }
 
 template class Vector<long>;
 template class Vector<double>;

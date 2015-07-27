@@ -38,6 +38,10 @@ public:
     template<typename U>
     friend std::ostream& operator<<(std::ostream& os,
                                     Matrix<U>   & obj);
+    /// @create a submatrix from row r1, to row r2 and from column c1 to column c2.
+    Matrix<T> submatrix(long r1, long r2, long c1 = 0, long c2 = 0) const;
+
+    Matrix<T> transpose() const;
 };
 
 Matrix<long> eye(long dimension);
