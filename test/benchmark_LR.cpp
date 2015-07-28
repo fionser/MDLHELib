@@ -6,65 +6,43 @@
 #include "utils/timer.hpp"
 #include "utils/FileUtils.hpp"
 #include <thread>
+#include "protocol/LR.hpp"
 void benchmarkLR(const FHEPubKey &pk,
                  const FHESecKey &sk,
                  const EncryptedArray &ea)
 {
-    const long mu = 5652;
-    MDL::Matrix<long> sigma = load_csv("covariance2.data");
+    long mu = 3916;
+    MDL::Matrix<long> D = load_csv("covariance.data");
+    auto sigma = D.submatrix(0, -1, 0, -2);
+    auto Xy = D.submatrix(0, -1,  -1, -1).vector();
     const long dimension = sigma.cols();
     MDL::Matrix<long> muR0 = MDL::eye(dimension);
-    MDL::EncMatrix M(pk), R(pk);
-
-    std::cout << sigma << std::endl;
-    M.pack(sigma, ea);
-    R.pack(muR0, ea);
-    long MU = mu;
+    MDL::MatInverseParam params{ pk, ea, dimension };
+    MDL::EncMatrix Q(pk);
+    MDL::EncVector eXy(pk);
     MDL::Timer timer;
-    for (auto &row : sigma.inverse()) {
-    	std::cout << row << std::endl;
-    } 
+
     timer.start();
-    for (int itr = 0; itr < 2; itr++) {
-        auto tmpR(R), tmpM(M);
-        MDL::Vector<long> mag(ea.size(), 2 * MU);
-	std::thread computeR([&tmpR, &ea, &dimension,
-                              &R, &M, &mag](){
-		tmpR.dot(M, ea, dimension);
-		R.multByConstant(mag.encode(ea));
-		R -= tmpR;
-	});
+    Q.pack(sigma, ea);
+    eXy.pack(Xy, ea);
 
-	std::thread computeM([&tmpM, &ea, &dimension,
-                              &M, &mag](){
-		tmpM.dot(M, ea, dimension);
-	});
+    auto M = MDL::inverse(Q, mu, params);
+    auto W = M.column_dot(eXy, ea, dimension);
+    timer.end();
+    printf("Enc -> Inverse %f\n", timer.second());
 
-	computeR.join();
-        computeM.join();
-	/*
-	tmpR.dot(M, ea, dimension);
-	R.multByConstant(mag.encode(ea));
-	R -= tmpR;
-
-	tmpM.dot(M, ea, dimension);
-	 */
-	M.multByConstant(mag.encode(ea));
-	M -= tmpM;
-        MU *= MU;
+    MDL::Vector<long> result;
+    W.unpack(result, sk, ea, true);
+    for (int i = 0; i < MDL::LR::ITERATION; i++) mu = mu * mu;
+    auto w = result.reduce(double(mu));
+    std::cout << w << std::endl;
+    {
+        auto invSigma = sigma.inverse();
+        auto trueW = invSigma.dot(Xy.reduce(1.0));
+        std::cout << trueW << std::endl;
     }
     timer.end();
-    std::cout << MU << std::endl;
-    printf("Iteration %f\n", timer.second());
-    M.unpack(muR0, sk, ea, true);
-    for (auto &row : muR0.reduce(double(MU))) {
-    	std::cout << row << std::endl;
-    } 
-    std::cout << "================" << std::endl;
-    R.unpack(muR0, sk, ea, true);
-    for (auto &row : muR0.reduce(double(MU))) {
-    	std::cout << row << std::endl;
-    } 
+    printf("Total %f\n", timer.second());
 }
 
 int main(int argc, char *argv[]) {

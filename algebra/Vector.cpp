@@ -59,14 +59,15 @@ T Vector<T>::dot(const Vector<T>& oth) const {
 template<typename T>
 Vector<T> Vector<T>::subvector(long startIndex, long endIndex) const
 {
-    if (endIndex <= startIndex || endIndex >= this->size()) {
+    while (startIndex < 0) { startIndex += dimension(); }
+    while (endIndex < 0) { endIndex += dimension(); }
+    if (endIndex < startIndex || endIndex >= this->size()) {
         std::cerr << "Invalid subvector arguments" << std::endl;
         return *this;
     }
     Vector<T> sub(endIndex - startIndex + 1);
     auto start = this->begin();
     auto end = start;
-
     std::advance(start, startIndex);
     std::advance(end, endIndex + 1);
     std::copy(start, end, sub.begin());

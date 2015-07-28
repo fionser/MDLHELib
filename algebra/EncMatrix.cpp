@@ -54,7 +54,6 @@ EncVector EncMatrix::dot(const EncVector     & oth,
                                   oth.getPubKey());
     std::vector<std::thread> workers;
     std::atomic<size_t> counter(0);
-
     for (int wr = 0; wr < WORKER_NR; wr++) {
         workers.push_back(std::move(std::thread([this, &result,
                                                  &counter, &oth, &ea]()
@@ -185,6 +184,12 @@ EncMatrix& EncMatrix::addConstant(const std::vector<NTL::ZZX> &cons)
     return *this;
 }
 
+EncMatrix& EncMatrix::addConstant(const Matrix<long> &cons,
+                                  const EncryptedArray &ea)
+{
+    return addConstant(cons.encode(ea));
+}
+
 EncMatrix& EncMatrix::negate()
 {
     for (auto &row : *this) {
@@ -215,9 +220,24 @@ EncMatrix& EncMatrix::operator-=(const EncMatrix& oth)
     return *this;
 }
 
-EncMatrix& EncMatrix::multByConstant(const NTL::ZZX &cons)
+EncMatrix& EncMatrix::multByConstant(const NTL::ZZX &con)
 {
-    for (size_t i = 0; i < this->size(); i++) this->at(i).multByConstant(cons);
+    for (size_t i = 0; i < this->size(); i++) this->at(i).multByConstant(con);
     return *this;
+}
+
+EncMatrix& EncMatrix::multByConstant(const std::vector<NTL::ZZX> &cons)
+{
+    assert(cons.size() == this->size());
+    for (size_t i = 0; i < cons.size(); i++) {
+        this->at(i).multByConstant(cons[i]);
+    }
+    return *this;
+}
+
+EncMatrix& EncMatrix::multByConstant(const Matrix<long> &mat,
+                                     const EncryptedArray &ea)
+{
+    return multByConstant(mat.encode(ea));
 }
 } // namespace MDL

@@ -21,6 +21,7 @@ public:
     Matrix<double>inverse() const;
 
     Matrix<T>  dot(const Matrix<T>& oth) const;
+    Vector<T>  dot(const Vector<T>& oth) const;
     Eigen::MatrixXd to_Eigen_matrix_format() const;
 
     void from_Eigen_matrix(const Eigen::MatrixXd& mat);

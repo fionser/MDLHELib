@@ -74,6 +74,17 @@ Matrix<double>Matrix<U>::inverse() const {
     return ret;
 }
 
+template<typename T>
+Vector<T> Matrix<T>::dot(const Vector<T>& oth) const
+{
+    assert(cols() == oth.dimension());
+    Vector<T> prod(rows());
+    for (size_t r = 0; r < rows(); r++) {
+        prod[r] = this->at(r).dot(oth);
+    }
+    return prod;
+}
+
 template<>
 Matrix<double>Matrix<double>::dot(const Matrix<double>& oth) const {
     auto mat1 = to_Eigen_matrix_format();
@@ -166,8 +177,11 @@ Matrix<double> Matrix<T>::reduce(const double factor) const
 template<typename T>
 Matrix<T> Matrix<T>::submatrix(long r1, long r2, long c1, long c2) const
 {
+    while (r1 < 0) { r1 += rows(); }
+    while (r2 < 0) { r2 += rows(); }
+
     c2 = c2 == 0 ? cols() - 1 : c2;
-    if (r2 <= r1 || r2 >= this->size() || c2 <= c1 || c2 > this->at(0).size()) {
+    if (r2 < r1 || r2 >= rows()) {
         std::cerr << "Invalid submatrix arguments" << std::endl;
         return *this;
     }

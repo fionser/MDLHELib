@@ -47,6 +47,12 @@ public:
 
     EncMatrix& addConstant(const std::vector<NTL::ZZX> &cons);
 
+    EncMatrix& addConstant(const Matrix<long> &cons, const EncryptedArray &ea);
+
+    EncMatrix& multByConstant(const std::vector<NTL::ZZX> &cons);
+
+    EncMatrix& multByConstant(const Matrix<long> &cons, const EncryptedArray &ea);
+
     EncMatrix& negate();
 
     EncMatrix& operator+=(const EncMatrix &oth);
