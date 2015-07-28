@@ -41,10 +41,18 @@ void EncMatrix::unpack(Matrix<NTL::ZZX>    & result,
                        bool                  negate) const
 {
     result.resize(this->size());
-
-    for (size_t r = 0; r < this->size(); r++) {
-        this->at(r).unpack(result[r], sk, ea, negate);
+    std::vector<std::thread> workers;
+    std::atomic<size_t> counter(0);
+    for (long wr = 0; wr < WORKER_NR && wr < this->size(); wr++) {
+        workers.push_back(std::move(std::thread([this, &result, &counter, &sk, &ea, &negate](){
+                                                size_t r;
+                                                while ((r = counter.fetch_add(1)) < this->size()) {
+                                                this->at(r).unpack(result[r], sk, ea, negate);
+                                                }
+                                                })));
     }
+
+    for (auto &&wr : workers) wr.join();
 }
 
 EncVector EncMatrix::dot(const EncVector     & oth,
