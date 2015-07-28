@@ -11,10 +11,16 @@ void benchmarkLR(const FHEPubKey &pk,
                  const FHESecKey &sk,
                  const EncryptedArray &ea)
 {
-    long mu = 3916;
-    MDL::Matrix<long> D = load_csv("covariance.data");
-    auto sigma = D.submatrix(0, -1, 0, -2);
-    auto Xy = D.submatrix(0, -1,  -1, -1).vector();
+    MDL::Matrix<double> D = load_csv_d("all_float_data");
+    auto X = D.submatrix(0, -1, 0, -2);
+    auto Y = D.submatrix(0, -1,  -1, -1).vector();
+    auto Xy = X.transpose().dot(Y).reduce(10.0);
+    auto Xy_round = Xy.div(1.0);
+    auto sigma = X.transpose().dot(X).reduce(10.0);
+    auto sigma_round = sigma.div(1.0);
+    long mu = static_cast<long>(sigma.maxEigenValue());
+    auto trueW = sigma.inverse().dot(Xy);
+
     const long dimension = sigma.cols();
     MDL::Matrix<long> muR0 = MDL::eye(dimension);
     MDL::MatInverseParam params{ pk, ea, dimension };
@@ -23,8 +29,8 @@ void benchmarkLR(const FHEPubKey &pk,
     MDL::Timer timer;
 
     timer.start();
-    Q.pack(sigma, ea);
-    eXy.pack(Xy, ea);
+    Q.pack(sigma_round, ea);
+    eXy.pack(Xy_round, ea);
 
     auto M = MDL::inverse(Q, mu, params);
     auto W = M.column_dot(eXy, ea, dimension);
@@ -36,11 +42,7 @@ void benchmarkLR(const FHEPubKey &pk,
     for (int i = 0; i < MDL::LR::ITERATION; i++) mu = mu * mu;
     auto w = result.reduce(double(mu));
     std::cout << w << std::endl;
-    {
-        auto invSigma = sigma.inverse();
-        auto trueW = invSigma.dot(Xy.reduce(1.0));
-        std::cout << trueW << std::endl;
-    }
+    std::cout << trueW << std::endl;
     timer.end();
     printf("Total %f\n", timer.second());
 }
