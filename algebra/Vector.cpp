@@ -109,6 +109,16 @@ Vector<T>& Vector<T>::operator*=(const T& val)
     return *this;
 }
 
+template<typename T>
+Vector<T>& Vector<T>::operator*=(Vector<T> &oth)
+{
+    assert(dimension() == oth.dimension());
+    for (size_t d = 0; d < dimension(); d++) {
+        this->at(d) -= oth[d];
+    }
+    return *this;
+}
+
 template<>
 void Vector<long>::random(const long &domain)
 {
