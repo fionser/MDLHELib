@@ -205,6 +205,14 @@ Matrix<T> Matrix<T>::transpose() const
     return mat;
 }
 
+template<typename T>
+Matrix<long> Matrix<T>::div(long factor) const
+{
+    Matrix<long> mat;
+    for (const auto &row : *this) mat.push_back(row.div(factor));
+    return mat;
+}
+
 template class Matrix<long>;
 template class Matrix<double>;
 

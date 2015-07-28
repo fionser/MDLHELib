@@ -39,6 +39,8 @@ public:
     Vector& operator*=(const T &val);
 
     Vector<T> subvector(long startIndex, long endIndex) const;
+
+    Vector<long> div(long factor) const;
 };
 
 template<typename U>

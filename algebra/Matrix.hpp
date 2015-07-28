@@ -34,6 +34,8 @@ public:
 
     Matrix<double> reduce(const double factor) const;
 
+    Matrix<long> div(long factor) const;
+
     Vector<T> vector() const;
 
     template<typename U>

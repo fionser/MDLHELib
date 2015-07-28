@@ -74,6 +74,17 @@ Vector<T> Vector<T>::subvector(long startIndex, long endIndex) const
     return sub;
 }
 
+template<typename T>
+Vector<long> Vector<T>::div(long factor) const
+{
+    Vector<long> vec(dimension());
+    std::transform(this->begin(), this->end(), vec.begin(), [&factor](T e) { return static_cast<long>(e / factor); });
+    return vec;
+}
+
+template<>
+Vector<long> Vector<NTL::ZZX>::div(long factor) const = delete;
+
 template<>
 NTL::ZZX Vector<long>::encode(const EncryptedArray &ea) const
 {
