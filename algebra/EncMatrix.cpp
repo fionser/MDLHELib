@@ -212,7 +212,7 @@ EncMatrix& EncMatrix::operator+=(const EncMatrix& oth)
 EncMatrix& EncMatrix::operator-=(const EncMatrix& oth)
 {
     if (this->size() != oth.size()) {
-        fprintf(stderr, "Warnning! adding two mismatch size matrix!\n");
+        fprintf(stderr, "Warnning! substracting two mismatch size matrix!\n");
         return *this;
     }
 

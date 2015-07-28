@@ -6,8 +6,8 @@
 #include <cassert>
 #include <algorithm>
 namespace MDL {
-template<>
-double Vector<long>::L2() const {
+template<typename T>
+double Vector<T>::L2() const {
     double norm = 0.0;
 
     for (auto e : *this) {
@@ -110,7 +110,7 @@ Vector<T>& Vector<T>::operator*=(const T& val)
 }
 
 template<typename T>
-Vector<T>& Vector<T>::operator*=(Vector<T> &oth)
+Vector<T>& Vector<T>::operator-=(const Vector<T> &oth)
 {
     assert(dimension() == oth.dimension());
     for (size_t d = 0; d < dimension(); d++) {

@@ -96,6 +96,8 @@ void benchmarkLR(const FHEPubKey &pk,
 
     std::cout << w << std::endl;
     std::cout << trueW << std::endl;
+	w -= trueW;
+	std::cout << "Error: " << w.L2() / trueW.L2() << std::endl;
     printf("Total %f\n", timer.second());
 }
 
