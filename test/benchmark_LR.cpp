@@ -12,19 +12,21 @@ const long WORKER_NR = 8;
 #else
 const long WORKER_NR = 1;
 #endif
-
+long BATCH_SZE = 100;
+MDL::Timer totalTimer, encTimer;
 std::pair<MDL::EncMatrix, MDL::EncVector>
 encrypt(const MDL::Matrix<double> &X,
         const MDL::Vector<double> &Y,
         const FHEPubKey &pk,
         const EncryptedArray &ea)
 {
-    const long BATCH_SZE = 100;
     const long divider = 10;
     const long rows = X.rows();
     long n = (rows + BATCH_SZE - 1) / BATCH_SZE;
     std::vector<MDL::Matrix<long>> local_sigma(n);
     std::vector<MDL::Vector<long>> local_xy(n);
+
+	totalTimer.end();
     for (int i = 0; i < n; i++) {
         long from = std::min(rows - 1, i * BATCH_SZE);
         long to = std::min(rows - 1, from + BATCH_SZE - 1);
@@ -38,11 +40,14 @@ encrypt(const MDL::Matrix<double> &X,
         local_sigma[i] = transpose.dot(submat).div(divider);
         local_xy[i] = transpose.dot(subvec).div(divider);
     }
-    MDL::Timer timer;
+
     std::vector<MDL::EncMatrix> encMat(n, pk);
     std::vector<MDL::EncVector> encVec(n, pk);
     std::vector<std::thread> workers;
     std::atomic<long> counter(0);
+
+	totalTimer.start();
+	encTimer.start();
     for (long wr = 0; wr < WORKER_NR; wr++) {
         workers.push_back(std::move(std::thread([&counter, &ea, &n, &encVec,
                                                 &encMat, &local_sigma, &local_xy]() {
@@ -53,11 +58,12 @@ encrypt(const MDL::Matrix<double> &X,
                                                 } })));
     }
     for (auto &&wr : workers) wr.join();
+	encTimer.end();
+
     for (long i = 1; i < n; i++) {
         encMat[0] += encMat[i];
         encVec[0] += encVec[i];
     }
-
     return { encMat[0], encVec[0] };
 }
 
@@ -76,29 +82,28 @@ void benchmarkLR(const FHEPubKey &pk,
     const long dimension = sigma.cols();
     MDL::Matrix<long> muR0 = MDL::eye(dimension);
     MDL::MatInverseParam params{ pk, ea, dimension };
-
-    MDL::Timer timer;
-    timer.start();
+	totalTimer.start();
+	MDL::Timer invTimer;
     auto pair = encrypt(X, Y, pk, ea);
     MDL::EncMatrix Q(pair.first);
     MDL::EncVector eXy(pair.second);
 
+	invTimer.start();
     auto M = MDL::inverse(Q, mu, params);
+	invTimer.end();
     auto W = M.column_dot(eXy, ea, dimension);
-    timer.end();
-    printf("Enc -> Inverse %f\n", timer.second());
 
     MDL::Vector<long> result;
     W.unpack(result, sk, ea, true);
     for (int i = 0; i < MDL::LR::ITERATION; i++) mu = mu * mu;
     auto w = result.reduce(double(mu));
-    timer.end();
+    totalTimer.end();
 
-    std::cout << w << std::endl;
-    std::cout << trueW << std::endl;
+    /* std::cout << w << std::endl; */
+    /* std::cout << trueW << std::endl; */
 	w -= trueW;
 	std::cout << "Error: " << w.L2() / trueW.L2() << std::endl;
-    printf("Total %f\n", timer.second());
+    printf("Total %f Enc %f Inv %f\n", totalTimer.second(), encTimer.second(), invTimer.second());
 }
 
 int main(int argc, char *argv[]) {
@@ -109,6 +114,7 @@ int main(int argc, char *argv[]) {
     argmap.arg("L", L, "L");
     argmap.arg("p", p, "p");
     argmap.arg("r", r, "r");
+    argmap.arg("B", BATCH_SZE, "Batch size");
     argmap.parse(argc, argv);
 
     FHEcontext context(m, p, r);
