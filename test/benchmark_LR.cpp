@@ -27,14 +27,17 @@ encrypt(const MDL::Matrix<double> &X,
     std::vector<MDL::Vector<long>> local_xy(n);
     for (int i = 0; i < n; i++) {
         long from = std::min(rows - 1, i * BATCH_SZE);
-        long to = std::min(rows - 1, from + BATCH_SZE);
-        if ((to - from) < BATCH_SZE / 10) printf("warnning!\n");
+        long to = std::min(rows - 1, from + BATCH_SZE - 1);
+        if (to + 1 < n && to - n < BATCH_SZE / 10) {
+			to = n - 1;
+			i += 1;
+		}
         auto submat = X.submatrix(from, to);
+		auto transpose = submat.transpose();
         auto subvec = Y.subvector(from, to);
-        local_sigma[i] = submat.transpose().dot(submat).div(divider);
-        local_xy[i] = submat.dot(subvec).div(divider);
+        local_sigma[i] = transpose.dot(submat).div(divider);
+        local_xy[i] = transpose.dot(subvec).div(divider);
     }
-
     MDL::Timer timer;
     std::vector<MDL::EncMatrix> encMat(n, pk);
     std::vector<MDL::EncVector> encVec(n, pk);
@@ -55,7 +58,7 @@ encrypt(const MDL::Matrix<double> &X,
         encVec[0] += encVec[i];
     }
 
-    return { encMat[0], encVec[1] };
+    return { encMat[0], encVec[0] };
 }
 
 void benchmarkLR(const FHEPubKey &pk,
