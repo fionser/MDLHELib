@@ -112,8 +112,8 @@ Vector<T>& Vector<T>::operator*=(const T& val)
 template<typename T>
 Vector<T>& Vector<T>::operator-=(const Vector<T> &oth)
 {
-    assert(dimension() == oth.dimension());
-    for (size_t d = 0; d < dimension(); d++) {
+    auto dd = std::min(dimension(), oth.dimension());
+    for (size_t d = 0; d < dd; d++) {
         this->at(d) -= oth[d];
     }
     return *this;
