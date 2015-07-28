@@ -22,7 +22,7 @@ encrypt(const MDL::Matrix<double> &X,
     const long BATCH_SZE = 100;
     const long divider = 10;
     const long rows = X.rows();
-    const long n = (rows + BATCH_SZE - 1) / BATCH_SZE;
+    long n = (rows + BATCH_SZE - 1) / BATCH_SZE;
     std::vector<MDL::Matrix<long>> local_sigma(n);
     std::vector<MDL::Vector<long>> local_xy(n);
     for (int i = 0; i < n; i++) {
@@ -30,7 +30,7 @@ encrypt(const MDL::Matrix<double> &X,
         long to = std::min(rows - 1, from + BATCH_SZE - 1);
         if (to + 1 < n && to - n < BATCH_SZE / 10) {
 			to = n - 1;
-			i += 1;
+			n -= 1;
 		}
         auto submat = X.submatrix(from, to);
 		auto transpose = submat.transpose();
