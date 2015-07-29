@@ -7,7 +7,7 @@
 #include <vector>
 #include <thread>
 
-#ifdef FHE_THREAD
+#ifdef FHE_THREADS
 const long NRWORKER = 8;
 #else
 const long NRWORKER = 1;
