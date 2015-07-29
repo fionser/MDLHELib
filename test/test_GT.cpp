@@ -24,25 +24,10 @@ int main(int argc, char *argv[]) {
     EncryptedArray ea(context, G);
     FHEPubKey pk = sk;
     printf("Slot %ld\n", ea.size());
-
-    MDL::EncVector encX(pk);
-    MDL::EncVector encY(pk);
-    std::vector<MDL::EncVector> result;
-
-    for (long trial = 0; trial < 100; trial++) {
-        MDL::Vector<long> x(ea.size(), NTL::RandomBnd(D));
-        MDL::Vector<long> y(ea.size(), NTL::RandomBnd(D));
-        encX.pack(x, ea);
-        encY.pack(y, ea);
-        MDL::GTInput input = { encX, encY, D, p };
-        auto result = MDL::GT(input, ea);
-
-        if (decrypt_gt_result(result, sk, ea) != (x[0] > y[0])) {
-            printf("Error %ld %ld\n", x[0], y[0]);
-            break;
-        } else {
-            printf("----\n");
-        }
-    }
+    std::vector<long> vec(ea.size());
+    vec[0] = 2;
+    vec[1] = 3;
+    Ctxt ctxt(pk);
+    ea.encrypt(ctxt, pk, vec);
     return 0;
 }

@@ -41,12 +41,12 @@ MDL::EncVector sum_ctxts(const std::vector<MDL::EncVector>& ctxts)
 
     for (auto && wr : workers) wr.join();
 
-    for (long i = 1; i < WORKER_NR; i++) {
-        partials[0] += partials[i];
-    }
+    for (long i = 1; i < WORKER_NR; i++) partials[0] += partials[i];
     timer.end();
+
     printf("Sum %zd ctxts with %ld workers costed %f sec\n", ctxts.size(),
            WORKER_NR, timer.second());
+
     return partials[0];
 }
 

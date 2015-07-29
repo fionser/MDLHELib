@@ -5,7 +5,8 @@
 #include <vector>
 #include <iostream>
 #include <eigen3/Eigen/Dense>
-
+#include <NTL/ZZX.h>
+class EncryptedArray;
 namespace MDL {
 template<typename T>
 class Matrix : public std::vector<Vector<T> > {
@@ -20,25 +21,36 @@ public:
     Matrix<double>inverse() const;
 
     Matrix<T>  dot(const Matrix<T>& oth) const;
+    Vector<T>  dot(const Vector<T>& oth) const;
     Eigen::MatrixXd to_Eigen_matrix_format() const;
 
     void from_Eigen_matrix(const Eigen::MatrixXd& mat);
 
+    std::vector<NTL::ZZX> encode(const EncryptedArray &ea) const;
+
+    Matrix& operator*=(const T &val);
+
+    void random(const T &domain);
+
+    Matrix<double> reduce(const double factor) const;
+
+    Matrix<long> div(long factor) const;
+
+    Vector<T> vector() const;
+
     template<typename U>
     friend std::ostream& operator<<(std::ostream& os,
                                     Matrix<U>   & obj);
+    /// @create a submatrix from row r1, to row r2 and from column c1 to column c2.
+    Matrix<T> submatrix(long r1, long r2, long c1 = 0, long c2 = 0) const;
+
+    Matrix<T> transpose() const;
 };
 
-template<typename U>
-std::ostream& operator<<(std::ostream& os, Matrix<U>& obj)
-{
-    std::cout << "[" << std::endl;
+Matrix<long> eye(long dimension);
 
-    for (auto& row : obj) {
-        std::cout << row << std::endl;
-    }
-    std::cout << "]";
-    return os;
-}
+template<typename T>
+Matrix<T> covariance(const Vector<T> &a, const Vector<T> &b);
+
 } // namespace MDL
 #endif // ifndef NDSS_MATRIX_HPP

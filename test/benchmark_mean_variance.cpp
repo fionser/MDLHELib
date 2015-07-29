@@ -20,8 +20,8 @@ std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
                                    long                     from = 0,
                                    long                     to = 0)
 {
-    MDL::Timer timer;
     to = to == 0 ? data.rows() : to;
+    MDL::Timer timer;
     std::vector<MDL::EncVector> ctxts(to - from, pk);
     std::vector<std::thread>    workers;
     std::atomic<size_t> counter(from);
@@ -41,8 +41,8 @@ std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
 
     for (auto && wr : workers) wr.join();
     timer.end();
-    printf("Encrypt %ld data with %ld workers costed %f sec\n", to - from,
-           WORKER_NR, timer.second());
+    //printf("Encrypt %ld data with %ld workers costed %f sec\n", to - from,
+    //       WORKER_NR, timer.second());
     return ctxts;
 }
 
@@ -75,8 +75,8 @@ MDL::EncVector mean(const std::vector<MDL::EncVector>& ctxts)
         partials[0] += partials[i];
     }
     timer.end();
-    printf("Sum %zd data with %ld workers costed %f sec\n", ctxts.size(),
-           WORKER_NR, timer.second());
+    //printf("Sum %zd data with %ld workers costed %f sec\n", ctxts.size(),
+    //       WORKER_NR, timer.second());
     return partials[0];
 }
 
@@ -93,15 +93,17 @@ MDL::EncVector squareSum(std::vector<MDL::EncVector>& ctxts)
             size_t next;
 
             while ((next = counter.fetch_add(1)) < ctxts.size()) {
-                ctxts[next].square();
+                //ctxts[next].square();
+				ctxts[next] *= ctxts[next];
             }
         })));
     }
 
     for (auto && wr : workers) wr.join();
     auto sq_sum = mean(ctxts);
+	sq_sum.reLinearize();
     timer.end();
-    printf("Square Sum costed %f sec\n", timer.second());
+    //printf("Square Sum costed %f sec\n", timer.second());
     return sq_sum;
 }
 
@@ -111,11 +113,10 @@ MDL::EncVector variance(const MDL::Matrix<long>& data,
 {
     MDL::EncVector square_sum(pk), sum_square(pk);
     NTL::ZZX   N(data.rows());
-    const long BATCH_SIZE = 5000;
+    const long BATCH_SIZE = 2500;
     MDL::Timer totalTimer, encTimer, evalTimer;
 
     totalTimer.start();
-
     for (long part = 0; part *BATCH_SIZE < data.rows(); part++) {
         long from  = std::min<long>(part * BATCH_SIZE, data.rows());
         long to    = std::min<long>(from + BATCH_SIZE, data.rows());
@@ -140,12 +141,42 @@ MDL::EncVector variance(const MDL::Matrix<long>& data,
     square_sum -= sum_square;
     evalTimer.end();
     totalTimer.end();
-    printf("Varaice of %zd data with %ld workers used %f(%f/%f)\n",
+    printf("Varaice of %zd data with %ld workers used %f %f %f\n",
            data.rows(), WORKER_NR,
-           totalTimer.second(),
            encTimer.second(),
-           evalTimer.second());
+           evalTimer.second(),
+           totalTimer.second());
     return square_sum;
+}
+
+MDL::EncVector average(const MDL::Matrix<long>& data,
+                       const EncryptedArray &ea,
+                       const FHEPubKey &pk)
+{
+    MDL::EncVector result(pk);
+    const long BATCH_SIZE = 2500;
+    MDL::Timer encTimer, evalTimer, totalTimer;
+    totalTimer.start();
+    for (long part = 0; part *BATCH_SIZE < data.rows(); part++) {
+        long from  = std::min<long>(part * BATCH_SIZE, data.rows());
+        long to    = std::min<long>(from + BATCH_SIZE, data.rows());
+        encTimer.start();
+        auto ctxts = encrypt(data, pk, ea, from, to);
+        encTimer.end();
+        evalTimer.start();
+        if (part > 0) {
+            result += mean(ctxts);
+        } else {
+            result = mean(ctxts);
+        }
+		evalTimer.end();
+    }
+
+    totalTimer.end();
+    printf("Mean of %zd data with %ld workders used %f %f %f\n",
+           data.rows(), WORKER_NR, encTimer.second(),
+		   evalTimer.second(), totalTimer.second());
+    return result;
 }
 
 int main(int argc, char *argv[]) {
@@ -167,8 +198,7 @@ int main(int argc, char *argv[]) {
 
     auto G = context.alMod.getFactorsOverZZ()[0];
     EncryptedArray ea(context, G);
-
-    auto data   = load_csv("adult.data");
+	printf("slots %ld\n", ea.size());
     auto result = load_csv("adult_result");
 
     // auto ctxts  = encrypt(data, pk, ea);
@@ -181,12 +211,11 @@ int main(int argc, char *argv[]) {
     //     std::cout << result[0] << std::endl;
     // }
 
-    {
-        MDL::Vector<long> ret;
+    MDL::Vector<long> ret;
+    for (long R : {5000, 10000, 15000, 20000, 25000, 0}) {
+    	auto data   = load_csv("adult.data", R);
         auto var = variance(data, ea, pk);
         var.unpack(ret, sk, ea);
-        std::cout << ret << std::endl;
-        std::cout << result[1] << std::endl;
     }
     return 0;
 }

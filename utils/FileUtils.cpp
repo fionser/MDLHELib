@@ -1,7 +1,29 @@
 #include "FileUtils.hpp"
 #include "fhe/EncryptedArray.h"
 #include <fstream>
-MDL::Vector<long>parse_line(const std::string& line)
+template<typename T>
+struct NumericalParser {
+    static T parse(const std::string &a) {}
+};
+
+template<>
+struct NumericalParser<long> {
+    static long parse(const std::string &a)
+    {
+        return std::strtol(a.c_str(), NULL, 10);
+    }
+};
+
+template<>
+struct NumericalParser<double> {
+    static double parse(const std::string &a)
+    {
+        return std::strtod(a.c_str(), NULL);
+    }
+};
+
+template<typename T>
+MDL::Vector<T>parse_line(const std::string& line)
 {
     char delimiter = '\0';
 
@@ -11,16 +33,16 @@ MDL::Vector<long>parse_line(const std::string& line)
 
     if (delimiter == '\0') {
         fprintf(stderr, "Warnning: the CSV file maybe invalid\n");
-        return MDL::Vector<long>(0);
+        return MDL::Vector<T>(0);
     }
 
-    MDL::Vector<long> vec;
+    MDL::Vector<T> vec;
     size_t pos = 0, next = 0;
 
     while (next < line.size()) {
         next = line.find(delimiter, pos);
         auto substr = line.substr(pos, next - pos);
-        vec.push_back(std::strtol(substr.c_str(), NULL, 10));
+        vec.push_back(NumericalParser<T>::parse(substr));
         pos = next + 1;
     }
     return vec;
@@ -43,34 +65,31 @@ MDL::Matrix<long>load_csv(const std::string& file, long max_lines)
         std::getline(stream, line);
 
         if (line.empty()) continue;
-        mat.push_back(parse_line(line));
+        if (line[0] == '#') continue;
+        mat.push_back(parse_line<long>(line));
     }
     return mat;
 }
 
-void totalSums(const EncryptedArray& ea, const long r, Ctxt& ctxt)
+MDL::Matrix<double>load_csv_d(const std::string& file, long max_lines)
 {
-    if (r > ea.size() || r == 1) return;
+    std::ifstream stream;
+    std::string   line;
+    bool is_all = false;
+    MDL::Matrix<double> mat;
 
-    Ctxt orig = ctxt;
+    stream.open(file);
 
-    long k    = NumBits(r);
-    long e    = 1;
+    if (!stream.is_open()) return mat;
 
-    for (long i = k - 2; i >= 0; i--) {
-        Ctxt tmp1 = ctxt;
-        ea.rotate(tmp1, e);
-        ctxt += tmp1; // ctxt = ctxt + (ctxt >>> e)
-        e     = 2 * e;
+    is_all = max_lines <= 0;
 
-        if (bit(r, i)) {
-            Ctxt tmp2 = orig;
-            ea.rotate(tmp2, e);
-            ctxt += tmp2; // ctxt = ctxt + (orig >>> e)
-                          // NOTE: we could have also computed
-                          // ctxt =  (ctxt >>> e) + orig, however,
-                          // this would give us greater depth/noise
-            e += 1;
-        }
+    while (!stream.eof() && !stream.bad() && (is_all || max_lines-- > 0)) {
+        std::getline(stream, line);
+
+        if (line.empty()) continue;
+        if (line[0] == '#') continue;
+        mat.push_back(parse_line<double>(line));
     }
+    return mat;
 }

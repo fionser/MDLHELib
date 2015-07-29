@@ -2,6 +2,7 @@
 #include "utils/timer.hpp"
 #include "fhe/EncryptedArray.h"
 #include <string>
+#include "algebra/NDSS.h"
 void test_load(long m, long p, long r, long L)
 {
     MDL::Timer  timer;
