@@ -24,7 +24,7 @@ MDL::EncVector encrypt(const MDL::Matrix<long> &mat,
     std::vector<std::thread> workers;
     std::atomic<long> counter(0);
     MDL::Timer encTimer, sumTimer;
-    const long ATTRIBUTE = 5;
+    const long ATTRIBUTE = 0;
     encTimer.start();
     for (long wr = 0; wr < NR_WORKERS; wr++) {
         workers.push_back(std::thread([&mat, &counter,
@@ -68,19 +68,32 @@ int main(int argc, char *argv[]) {
     FHEPubKey pk = sk;
     printf("Slot %ld\n", ea.size());
 
-    MDL::Timer evalTimer, decTimer;
-    auto category = load_csv("adult.data", N);
+    MDL::Timer evalTimer, decTimer, totalTimer;
+    auto category = load_csv("category.data", N);
+	N = category.rows();
+	printf("%zd records\n", category.rows());
     auto joined = encrypt(category, pk, ea);
-    const long domainOfCategory = 100;
-    MDL::Mode::Input input {joined, domainOfCategory, N};
-    evalTimer.start();
-    auto modeResults = MDL::computeMode(input, ea);
-    evalTimer.end();
+    const long domainOfCategory = 20;
+	const long BATCHSZE = domainOfCategory / 10;
+    MDL::Mode::Input input {joined, {0, 0, domainOfCategory}, N};
+	MDL::Matrix<long> mat(domainOfCategory + 1, domainOfCategory + 1);
 
-    decTimer.start();
-    long mode = MDL::argMode(modeResults, sk, ea);
-    decTimer.end();
-    printf("The mode is %ld-th category. Eval %f Dec %f\n", mode,
-           evalTimer.second(), decTimer.second());
+	totalTimer.start();
+	for (long from = 0; from <= domainOfCategory; from += BATCHSZE) {
+		MDL::Mode::Result::ptr modeResults = nullptr;
+    	evalTimer.start();
+	    input.gt.processFrom = from;
+	    input.gt.processTo = std::min(from + BATCHSZE, domainOfCategory);
+    	MDL::computeMode(input, ea, modeResults);
+    	evalTimer.end();
+    	decTimer.start();
+		MDL::argMode(input, modeResults, sk, ea, mat);
+    	decTimer.end();
+	}
+	totalTimer.end();
+	auto evalT = evalTimer.second();
+	auto decT = decTimer.second();
+    printf("The mode is %ld-th category. Eval Dec Other\n %f %f %f\n",
+		   MDL::argMode(mat), evalT, decT, totalTimer.second() - evalT - decT);
     return 0;
 }

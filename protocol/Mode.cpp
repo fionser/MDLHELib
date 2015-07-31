@@ -21,7 +21,9 @@ public:
     }
 
     std::pair<GTResult, bool> get(long i, long j) const {
-        if (i >= j || j >= m_matrixSize || j < 0) return {{}, false};
+        if (i >= j || j >= m_matrixSize || j < 0) {
+			printf("warnning in get\n"); return {{}, false};
+		}
         auto index = (m_matrixSize * i - ((i + 1) * i >> 1)) + j - i - 1;
         if (index >= m_results.size()) {
             printf("%ld %ld get over size\n", index, m_results.size());
@@ -33,7 +35,11 @@ public:
     size_t matrixSize() const { return m_matrixSize; }
     /// make sures i < j
     void put(const GTResult &result, long i, long j) {
-        if (i >= j || j >= m_matrixSize || j < 0) return;
+        if (i >= j || j >= m_matrixSize || j < 0) {
+			printf("warnning in put i:%ld j:%ld max:%ld\n",
+				   i, j, m_matrixSize);
+			return;
+		}
         auto index = (m_matrixSize * i - ((i + 1) * i >> 1)) + j - i - 1;
         if (index >= m_results.size()) {
             printf("%ld %ld put over size\n", index, m_results.size());
@@ -47,26 +53,44 @@ private:
 };
 } // namespace Mode
 
-Mode::Result::ptr computeMode(const Mode::Input &input,
-                              const EncryptedArray &ea)
+static long computeIndex(long row, long cols)
 {
-    auto results = std::make_shared<Mode::ConcreteResult>(input.slotToProcess);
-    auto plainSpace = ea.getContext().alMod.getPPowR();
-    std::atomic<long> counter(0);
-    std::vector<std::thread> workers;
+	if (row == 0) return 0;
+	return (2 * cols - row - 1) * row / 2;
+}
 
+static std::pair<long, long> computeCoord(long index, long cols)
+{
+	long row = 0;
+	while ((2 * cols - row - 1) * row / 2 <= index) { row++; }
+	row = row - 1;
+	long col = (index - computeIndex(row, cols)) + row + 1;
+	return {row, col};
+}
+
+Mode::Result::ptr computeMode(const Mode::Input &input,
+                              const EncryptedArray &ea,
+							  Mode::Result::ptr &results)
+{
+	if (results == nullptr) {
+    	results = std::make_shared<Mode::ConcreteResult>(input.gt.maximum + 1);
+	}
+    auto plainSpace = ea.getContext().alMod.getPPowR();
+	auto fromIndex = computeIndex(input.gt.processFrom, input.gt.maximum + 1);
+	auto toIndex = computeIndex(input.gt.processTo, input.gt.maximum + 1);
+    std::atomic<long> counter(fromIndex);
+    std::vector<std::thread> workers;
     for (long wr = 0; wr < NRWORKER; wr++) {
         workers.push_back(std::thread([&]() {
             long i;
-            while ((i = counter.fetch_add(1)) < input.slotToProcess) {
-                auto X(input.slots);
-                replicate(ea, X, i);
-                for (long j = i + 1; j < input.slotToProcess; j++) {
-                    auto Y(input.slots);
-                    replicate(ea, Y, j);
-                    GTInput gt{X, Y, input.valueDomain, plainSpace};
-                    results->put(GT(gt, ea), i, j);
-                }
+            while ((i = counter.fetch_add(1)) < toIndex) {
+                auto X(input.slots), Y(input.slots);
+				auto coord = computeCoord(i, input.gt.maximum + 1);
+                replicate(ea, X, coord.first);
+                replicate(ea, Y, coord.second);
+
+                GTInput gt{X, Y, input.valueDomain, plainSpace};
+                results->put(GT(gt, ea), coord.first, coord.second);
             } }));
     }
 
@@ -74,36 +98,40 @@ Mode::Result::ptr computeMode(const Mode::Input &input,
     return results;
 }
 
-long argMode(const Mode::Result::ptr results,
+void argMode(const Mode::Input &input,
+			 const Mode::Result::ptr results,
              const FHESecKey &sk,
-             const EncryptedArray &ea)
+             const EncryptedArray &ea,
+			 MDL::Matrix<long> &booleanMatrix)
 {
-    auto size = results->matrixSize();
-    Matrix<long> booleanMatrix(size, size);
     std::vector<std::thread> workers;
-    std::atomic<long> counter(0);
-
+	auto fromIndex = computeIndex(input.gt.processFrom, input.gt.maximum + 1);
+	auto toIndex = computeIndex(input.gt.processTo, input.gt.maximum + 1);
+    std::atomic<long> counter(fromIndex);
+	assert(results != nullptr);
     for (long wr = 0; wr < NRWORKER; wr++) {
         workers.push_back(std::thread([&]() {
-        long i;
-        while ((i = counter.fetch_add(1)) < size) {
-            for (long j = i + 1; j < size; j++) {
-                auto gt = results->get(i, j);
-                assert(gt.second == true);
-                bool isGt = decrypt_gt_result(gt.first, sk, ea);
-                booleanMatrix[i][j] = isGt;
-                booleanMatrix[j][i] = !isGt;
-            }
+        long index;
+        while ((index = counter.fetch_add(1)) < toIndex) {
+			auto coord = computeCoord(index, input.gt.maximum + 1);
+			auto gt = results->get(coord.first, coord.second);
+			if (!gt.second) { printf("warrning false gt!\n"); abort(); }
+			bool isGt = decrypt_gt_result(gt.first, sk, ea);
+			booleanMatrix[coord.first][coord.second] = isGt;
+			booleanMatrix[coord.second][coord.first] = !isGt;
         } }));
     }
 
     for (auto &&wr : workers) wr.join();
+}
 
-    for (long i = 0; i < size; i++) {
+long argMode(const MDL::Matrix<long> &mat)
+{
+	for (long i = 0; i < mat.rows(); i++) {
         bool flag = true;
-        for (long j = 0; j < size; j++) {
+        for (long j = 0; j < mat.cols(); j++) {
             if (j == i) continue;
-            if (!booleanMatrix[i][j]) { // i-th <= j-th
+            if (0 == mat[i][j]) { // i-th <= j-th
                 flag = false;
                 break;
             }
@@ -114,4 +142,5 @@ long argMode(const Mode::Result::ptr results,
     printf("warnning! no mode!?\n");
     return -1;
 }
+
 } // namespace MDL
