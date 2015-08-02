@@ -15,6 +15,15 @@ long NR_WORKERS = 8;
 #else
 long NR_WORKERS = 1;
 #endif
+enum class Attribute {
+	WORKCLASS = 0,
+	EDUCATION = 1
+};
+
+enum class Domain {
+	WORKCLASS = 8,
+	EDUCATION = 16,
+};
 
 MDL::EncVector encrypt(const MDL::Matrix<long> &mat,
                        const FHEPubKey &pk,
@@ -25,7 +34,7 @@ MDL::EncVector encrypt(const MDL::Matrix<long> &mat,
     std::vector<MDL::EncVector> ctxts(mat.rows(), pk);
     std::vector<std::thread> workers;
     std::atomic<long> counter(0);
-    const long ATTRIBUTE = 1;
+    const long ATTRIBUTE = static_cast<long>(Attribute::WORKCLASS);
     encTimer.start();
     for (long wr = 0; wr < NR_WORKERS; wr++) {
         workers.push_back(std::thread([&mat, &counter,
@@ -78,7 +87,7 @@ int main(int argc, char *argv[]) {
 		N = category.rows();
 
 		auto joined = encrypt(category, pk, ea, encTimer, evalTimer);
-		const long domainOfCategory = 16;
+		const long domainOfCategory = static_cast<long>(Domain::WORKCLASS);
 		const long BATCHSZE = std::max<long>(domainOfCategory, 1);
 		MDL::Mode::Input input {joined, {0, 0, domainOfCategory}, N};
 		MDL::Matrix<long> mat(domainOfCategory + 1, domainOfCategory + 1);
