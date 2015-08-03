@@ -1,4 +1,5 @@
 #include "encoding.hpp"
+#include <algorithm>
 namespace MDL {
 namespace encoding {
 Vector<long>indicator(long index, const EncryptedArray& ea)
@@ -8,11 +9,15 @@ Vector<long>indicator(long index, const EncryptedArray& ea)
     return vec;
 }
 
-Vector<long>staircase(long index, const EncryptedArray& ea)
+Vector<long>staircase(long index, const EncryptedArray& ea, long domain)
 {
     Vector<long> vec(ea.size());
-
-    for (long i = index; i < ea.size(); i++) vec[i] = 1;
+	domain = domain == 0 ? ea.size() : domain;
+	auto itr = vec.begin();
+	auto end = vec.begin();
+	std::advance(itr, index);
+	std::advance(end, domain);
+	for (; itr != end; itr++) *itr = 1;
     return vec;
 }
 } // namepspace encoding
