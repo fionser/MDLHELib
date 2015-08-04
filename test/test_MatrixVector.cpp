@@ -23,6 +23,12 @@ void test_Matrix()
         assert(prod[0][0] == 100);
         assert(prod[1][1] == 9);
         assert(prod[2][2] == 16);
+        auto submat = mat.submatrix(0, 1);
+        auto matT = submat.transpose();
+        std::cout << submat << std::endl;
+        std::cout << matT << std::endl;
+        prod = matT.dot(submat);
+        std::cout << prod << std::endl;
     }
 }
 
