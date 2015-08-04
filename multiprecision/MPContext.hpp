@@ -1,6 +1,6 @@
 #ifndef MULTIPRECISION_MPCONTEXT_HPP
 #define MULTIPRECISION_MPCONTEXT_HPP
-#include "fhe/FHEcontext.h"
+#include "fhe/FHEContext.h"
 #include <memory>
 #include <NTL/ZZ.h>
 #include <iostream>
