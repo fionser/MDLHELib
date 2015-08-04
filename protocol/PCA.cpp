@@ -33,6 +33,7 @@ std::pair<MPEncVector, MPEncVector> runPCA(const MPEncMatrix &mat,
     for (size_t r = 1; r < mat.rowsNum(); r++) u += mat.get(r);
 
     for (long it = 1; it < PCA::ITERATION; it++) {
+        std::cout << "iteration " << it << std::endl;
         previousU = u;
         u = mat.sDot(u, ea);
     }

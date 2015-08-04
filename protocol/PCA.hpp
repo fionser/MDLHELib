@@ -13,7 +13,7 @@ namespace MDL
 class EncVector;
 class EncMatrix;
 namespace PCA {
-    const long ITERATION = 4;
+    const long ITERATION = 5;
 };
 
 std::pair<EncVector, EncVector> runPCA(const EncMatrix &mat,

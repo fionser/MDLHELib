@@ -97,7 +97,7 @@ MPEncMatrix encryptAndSum(MDL::Timer &encTimer,
 
 int main(int argc, char *argv[]) {
     ArgMapping argMap;
-    long m, p, r, L, N = 0, P = 0, M = 100;
+    long m = 0, p = 0, r = 0, L = 0, N = 0, P = 0, M = 100;
     argMap.arg("m", m, "m: cyclotomic");
     argMap.arg("p", p, "p: plaintext space");
     argMap.arg("r", r, "r: lifting");
@@ -106,18 +106,33 @@ int main(int argc, char *argv[]) {
     argMap.arg("P", P, "P: How many primes to use");
     argMap.arg("M", M, "M: Magnifier");
     argMap.parse(argc, argv);
+    if (m == 0 || p == 0 || r == 0 || L == 0) {
+        printf("parameter!\n");
+        return -1;
+    }
+    auto X = load_data("PCA_100", M, N);
+    MDL::Timer encTimer, evalTimer, decTimer, keyTimer;
+    auto maxEigValue = X.maxEigenValue();
 
-    auto X = load_data("float_adult.data", M, N);
-
+    keyTimer.start();
     MPContext context(m, p, r, P);
     context.buildModChain(L);
+    std::cout << "context done" << std::endl;
     MPSecKey sk(context);
+    std::cout << "sk done" << std::endl;
     MPPubKey pk(sk);
+    std::cout << "pk done" << std::endl;
     MPEncArray ea(context);
-    std::cout << "slots " << ea.slots() << std::endl;
-    MDL::Timer encTimer, evalTimer, decTimer;
+    std::cout << "ea done" << std::endl;
+    keyTimer.end();
+    std::cout << "slots " << ea.slots() << " plainText: " << context.precision() << std::endl;
+    
+    
+    MPEncMatrix encMat(pk);
+    encMat.pack(X, ea);
+    //auto encMat = encryptAndSum(encTimer, evalTimer, X, pk, ea);
 
-    auto encMat = encryptAndSum(encTimer, evalTimer, X, pk, ea);
+    std::cout << "run PCA" << std::endl;
     evalTimer.start();
     auto pca = MDL::runPCA(encMat, ea, pk);
     evalTimer.end();
@@ -127,6 +142,13 @@ int main(int argc, char *argv[]) {
     pca.first.unpack(v1, sk, ea);
     pca.second.unpack(v2, sk, ea);
     decTimer.end();
-    std::cout << v1.L2() / v2.L2() / M / M << std::endl;
+
+    auto approx = v1.L2() / v2.L2();
+    printf("%f %f\n", approx, maxEigValue);
+    std::cout << "Error: " << std::abs(approx - maxEigValue) / maxEigValue << std::endl;
+
+    printf("KeyGen\tEnc\tEval\tDec\n%f\t%f\t%f\t%f\n",
+           keyTimer.second(), encTimer.second(),
+           evalTimer.second(), decTimer.second());
     return 0;
 }

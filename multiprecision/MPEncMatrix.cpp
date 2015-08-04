@@ -3,6 +3,11 @@
 #include "MPSecKey.hpp"
 #include "MPEncArray.hpp"
 #include "MPReplicate.h"
+#ifdef FHE_THREADS
+const long WORKER_NR = 8;
+#else
+const long WORKER_NR = 1;
+#endif
 
 MPEncMatrix::MPEncMatrix(const MPPubKey &pk) : _pk(pk) {}
 

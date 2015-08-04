@@ -1,5 +1,5 @@
 #include "algebra/CRT.hpp"
-#include "fhe/FHEcontext.h"
+#include "fhe/FHEContext.h"
 #include "fhe/FHE.h"
 #include "fhe/EncryptedArray.h"
 #include <iostream>
