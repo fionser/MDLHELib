@@ -14,8 +14,14 @@ public:
     long slots() const { return minimumSlot; }
 
     size_t arrayNum() const { return arrays.size(); }
+
+    std::vector<long> primes() const { return m_primes; }
+
+    NTL::ZZ plainSpace() const { return m_plainSpace; }
 private:
     long minimumSlot = 0;
+    NTL::ZZ m_plainSpace;
+    std::vector<long> m_primes;
     std::vector<encArrayPtr> arrays;
 };
 #endif // multiprecision/MPEncArray.hpp

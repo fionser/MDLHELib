@@ -1,6 +1,8 @@
 #include "MPEncArray.hpp"
 #include "MPContext.hpp"
 MPEncArray::MPEncArray(const MPContext &context)
+    : m_primes(context.primes()),
+      m_plainSpace(context.plainSpace())
 {
     auto parts = context.partsNum();
     arrays.reserve(parts);
@@ -12,5 +14,4 @@ MPEncArray::MPEncArray(const MPContext &context)
             minimumSlot = arrays[i]->size();
         }
     }
-
 }

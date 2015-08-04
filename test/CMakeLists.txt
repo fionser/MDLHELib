@@ -20,7 +20,7 @@ target_link_libraries(test_dump utils fhe)
 target_link_libraries(test_fileutils utils fhe)
 target_link_libraries(test_GT protocol algebra utils fhe)
 target_link_libraries(test_CRT algebra fhe)
-target_link_libraries(test_MPContext multiprecision fhe)
+target_link_libraries(test_MPContext multiprecision algebra fhe)
 
 target_link_libraries(benchmark_PCA algebra utils fhe)
 target_link_libraries(benchmark_FHE_primitives algebra utils fhe)

@@ -19,8 +19,13 @@ public:
     size_t partsNum() const { return contexts.size(); }
 
     double precision() const;
+
+    ZZ plainSpace() const { return m_plainSpace; }
+
+    std::vector<long> primes() const { return m_primes; }
 private:
-    ZZ plainSpace = NTL::to_ZZ(1);
+    ZZ m_plainSpace = NTL::to_ZZ(1);
+    std::vector<long> m_primes;
     std::vector<contextPtr> contexts;
 };
 #endif // multiprecision/mpcontext.hpp
