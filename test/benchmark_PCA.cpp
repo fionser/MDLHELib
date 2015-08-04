@@ -118,19 +118,15 @@ int main(int argc, char *argv[]) {
     MDL::Timer encTimer, evalTimer, decTimer;
 
     auto encMat = encryptAndSum(encTimer, evalTimer, X, pk, ea);
-    MDL::Matrix<NTL::ZZ> mmmt;
-    encMat.unpack(mmmt, sk, ea, true);
-    std::cout << mmmt << std::endl;
-    return 0;
-    // evalTimer.start();
-    // auto pca = MDL::runPCA(encMat, ea, pk);
-    // evalTimer.end();
-    //
-    // decTimer.start();
-    // MDL::Vector<ZZ> v1, v2;
-    // pca.first.unpack(v1, sk, ea);
-    // pca.second.unpack(v2, sk, ea);
-    // decTimer.end();
-    // std::cout << v1.L2() / v2.L2() / M / M << std::endl;
+    evalTimer.start();
+    auto pca = MDL::runPCA(encMat, ea, pk);
+    evalTimer.end();
+
+    decTimer.start();
+    MDL::Vector<ZZ> v1, v2;
+    pca.first.unpack(v1, sk, ea);
+    pca.second.unpack(v2, sk, ea);
+    decTimer.end();
+    std::cout << v1.L2() / v2.L2() / M / M << std::endl;
     return 0;
 }
