@@ -5,6 +5,7 @@
 #include "algebra/Matrix.hpp"
 #include <vector>
 #include <NTL/ZZ.h>
+#include <NTL/ZZX.h>
 
 class MPPubKey;
 class MPEncArray;
@@ -28,7 +29,23 @@ public:
                      const MPEncArray &ea) const;
 
     MPEncMatrix& dot(const MPEncMatrix &oth,
-                     const MPEncVector &ea);
+                     const MPEncArray &ea,
+                     long columnToProces = 0);
+
+    MPEncMatrix& addConstant(const MDL::Matrix<long> &con,
+                             const MPEncArray &ea);
+
+    MPEncMatrix& mulConstant(const MDL::Matrix<long> &con,
+                             const MPEncArray &ea);
+
+    MPEncMatrix& mulConstant(const NTL::ZZX &con);
+
+    MPEncMatrix& negate();
+
+    MPEncMatrix& operator+=(const MPEncMatrix &oth);
+
+    MPEncMatrix& operator-=(const MPEncMatrix &oth);
+
 private:
     const MPPubKey &_pk;
     std::vector<MPEncVector> ctxts;

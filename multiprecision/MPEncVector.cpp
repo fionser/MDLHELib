@@ -97,6 +97,21 @@ MPEncVector& MPEncVector::operator+=(const MPEncVector &oth)
     return *this;
 }
 
+MPEncVector& MPEncVector::operator-=(const MPEncVector &oth)
+{
+    auto num = oth.ctxts.size();
+    if (num != ctxts.size()) {
+        printf("Error! MPEncVectors operator -= !\n");
+        return *this;
+    }
+
+    for (long i = 0; i < num; i++) {
+        ctxts[i] -= oth.ctxts[i];
+    }
+
+    return *this;
+}
+
 MPEncVector& MPEncVector::dot(const MPEncVector &oth,
                               const MPEncArray &ea)
 {
@@ -108,4 +123,55 @@ MPEncVector& MPEncVector::dot(const MPEncVector &oth,
     }
 
     return *this;
+}
+
+MPEncVector& MPEncVector::addConstant(const MDL::Vector<long> &con,
+                                      const MPEncArray &ea)
+{
+    if (ea.arrayNum() != partsNum()) {
+        printf("Warnning! MPEncVector addConstant!\n");
+        return *this;
+    }
+
+    for (long i = 0; i < ea.arrayNum(); i++) {
+        NTL::ZZX poly;
+
+        if (ea.get(i)->size() > con.dimension()) {
+            auto tmp(con);
+            tmp.resize(ea.get(i)->size());
+            ea.get(i)->encode(poly, tmp);
+        } else {
+            ea.get(i)->encode(poly, con);
+        }
+        get(i).addConstant(poly);
+    }
+    return *this;
+}
+
+MPEncVector& MPEncVector::mulConstant(const MDL::Vector<long> &con,
+                                      const MPEncArray &ea)
+{
+    if (ea.arrayNum() != partsNum()) {
+        printf("Warnning! MPEncVector mulConstant!\n");
+        return *this;
+    }
+
+    for (long i = 0; i < ea.arrayNum(); i++) {
+        NTL::ZZX poly;
+
+        if (ea.get(i)->size() > con.dimension()) {
+            auto tmp(con);
+            tmp.resize(ea.get(i)->size());
+            ea.get(i)->encode(poly, tmp);
+        } else {
+            ea.get(i)->encode(poly, con);
+        }
+        get(i).multByConstant(poly);
+    }
+    return *this;
+}
+
+void MPEncVector::reLinearize()
+{
+    for (auto &ctxt : ctxts) ctxt.reLinearize();
 }

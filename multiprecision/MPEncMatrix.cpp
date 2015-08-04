@@ -49,7 +49,88 @@ MPEncVector MPEncMatrix::sDot(const MPEncVector &oth,
 }
 
 MPEncMatrix& MPEncMatrix::dot(const MPEncMatrix &oth,
-                              const MPEncArray &ea) const
+                              const MPEncArray &ea,
+                              long columnToProces)
 {
+    if (columnToProces <= 0) columnToProces = ea.slots();
+    auto rows = rowsNum();
 
+    for (long row = 0; row < rows; row++) {
+        MPEncVector oneRow(_pk);
+        for (long col = 0; col < columnToProces; col++) {
+            auto tmp(ctxts[row]);
+            replicate(tmp, ea, col);
+            tmp *= oth.ctxts[col];
+            if (col > 0) oneRow += tmp;
+            else oneRow = tmp;
+        }
+        oneRow.reLinearize();
+        ctxts[row] = oneRow;
+    }
+
+    return *this;
+}
+
+MPEncMatrix& MPEncMatrix::addConstant(const MDL::Matrix<long> &con,
+                                      const MPEncArray &ea)
+{
+    if (rowsNum() != con.rows()) {
+        printf("Warnning! MPEncMatrix addConstant!\n");
+        return *this;
+    }
+
+    auto rows = con.rows();
+    for (long row = 0; row < rows; row++) {
+        ctxts[row].addConstant(con[row], ea);
+    }
+
+    return *this;
+}
+
+MPEncMatrix& MPEncMatrix::mulConstant(const MDL::Matrix<long> &con,
+                                      const MPEncArray &ea)
+{
+    if (rowsNum() != con.rows()) {
+        printf("Warnning! MPEncMatrix mulConstant!\n");
+        return *this;
+    }
+
+    auto rows = con.rows();
+    for (long row = 0; row < rows; row++) {
+        ctxts[row].mulConstant(con[row], ea);
+    }
+
+    return *this;
+}
+
+MPEncMatrix& MPEncMatrix::negate()
+{
+    for (auto &row : ctxts) row.negate();
+    return *this;
+}
+
+MPEncMatrix& MPEncMatrix::operator+=(const MPEncMatrix &oth)
+{
+    if (rowsNum() != oth.rowsNum()) {
+        printf("Warnning! MPEncMatrix operator +=!\n");
+        return *this;
+    }
+
+    for (long r = 0; r < oth.rowsNum(); r++) {
+        ctxts[r] += oth.ctxts[r];
+    }
+    return *this;
+}
+
+MPEncMatrix& MPEncMatrix::operator-=(const MPEncMatrix &oth)
+{
+    if (rowsNum() != oth.rowsNum()) {
+        printf("Warnning! MPEncMatrix operator -=!\n");
+        return *this;
+    }
+
+    for (long r = 0; r < oth.rowsNum(); r++) {
+        ctxts[r] -= oth.ctxts[r];
+    }
+    return *this;
 }

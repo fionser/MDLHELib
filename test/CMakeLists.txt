@@ -8,7 +8,7 @@ add_executable(test_fileutils test_fileutils.cpp)
 add_executable(test_GT test_GT.cpp)
 add_executable(test_CRT test_CRT.cpp)
 add_executable(test_MPContext test_MPContext.cpp)
-add_executable(test_mode test_mode.cpp
+add_executable(test_mode test_mode.cpp)
 
 add_executable(benchmark_FHE_primitives benchmark_FHE_primitives.cpp)
 add_executable(benchmark_mean_variance benchmark_mean_variance.cpp)
@@ -34,3 +34,4 @@ target_link_libraries(benchmark_LR protocol utils algebra fhe)
 target_link_libraries(benchmark_covariance protocol algebra utils fhe)
 
 file(COPY adult_result adult.data covariance.data all_float_data DESTINATION .)
+

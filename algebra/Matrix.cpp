@@ -248,4 +248,17 @@ std::ostream& operator<<(std::ostream& os, Matrix<double>& obj)
     std::cout << "]";
     return os;
 }
+
+template<>
+std::ostream& operator<<(std::ostream& os, Matrix<NTL::ZZ>& obj)
+{
+    std::cout << "[" << std::endl;
+
+    for (auto& row : obj) {
+        std::cout << row << std::endl;
+    }
+    std::cout << "]";
+    return os;
+}
+
 } // namespace MDL

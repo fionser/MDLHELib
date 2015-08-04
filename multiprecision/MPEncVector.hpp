@@ -29,15 +29,21 @@ public:
 
     MPEncVector& operator+=(const MPEncVector &oth);
 
+    MPEncVector& operator-=(const MPEncVector &oth);
+
     void negate();
 
-    void multiByConstant(NTL::ZZX c);
+    MPEncVector& addConstant(const MDL::Vector<long> &con,
+                             const MPEncArray &ea);
 
-    void multiByConstant(NTL::ZZ c);
+    MPEncVector& mulConstant(const MDL::Vector<long> &con,
+                             const MPEncArray &ea);
 
     size_t partsNum() const { return ctxts.size(); }
 
     MDL::EncVector& get(int index) { return ctxts[index]; }
+
+    void reLinearize();
 private:
     std::vector<MDL::EncVector> ctxts;
 };
