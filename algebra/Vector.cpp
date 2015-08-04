@@ -45,6 +45,16 @@ double Vector<NTL::ZZX>::L2() const {
     return std::sqrt(std::exp(log(summation)));
 }
 
+template<>
+double Vector<NTL::ZZ>::L2() const {
+    NTL::ZZ summation(0);
+
+    for (auto& e : *this) {
+		summation += e * e;
+    }
+    return std::sqrt(std::exp(log(summation)));
+}
+
 template<typename T>
 T Vector<T>::dot(const Vector<T>& oth) const {
     assert(dimension() == oth.dimension());
