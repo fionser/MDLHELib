@@ -15,6 +15,9 @@ class MPEncMatrix {
 public:
     MPEncMatrix(const MPPubKey &pk);
 
+    MPEncMatrix(const MPPubKey &pk,
+                const std::vector<MPEncVector> &copy);
+
     size_t rowsNum() const { return ctxts.size(); }
 
     void pack(const MDL::Matrix<long> &mat,
@@ -23,7 +26,7 @@ public:
     void unpack(MDL::Matrix<NTL::ZZ> &result,
                 const MPSecKey &sk,
                 const MPEncArray &ea,
-                bool negate = false);
+                bool negate = true);
     /// assume that the matrix is symmetric
     MPEncVector sDot(const MPEncVector &oth,
                      const MPEncArray &ea) const;

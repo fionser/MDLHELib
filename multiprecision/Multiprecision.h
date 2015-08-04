@@ -7,4 +7,5 @@
 #include "MPPubKey.hpp"
 #include "MPReplicate.h"
 #include "MPSecKey.hpp"
+#include "MPRotate.h"
 #endif // MULTIPRECISION_MULTIPRESION_H

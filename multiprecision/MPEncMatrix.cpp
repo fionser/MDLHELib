@@ -6,6 +6,10 @@
 
 MPEncMatrix::MPEncMatrix(const MPPubKey &pk) : _pk(pk) {}
 
+MPEncMatrix::MPEncMatrix(const MPPubKey &pk,
+                         const std::vector<MPEncVector> &copy)
+    : _pk(pk) { ctxts = copy; }
+
 void MPEncMatrix::pack(const MDL::Matrix<long> &mat,
                        const MPEncArray &ea)
 {

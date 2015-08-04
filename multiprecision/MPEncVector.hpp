@@ -17,7 +17,7 @@ public:
     void unpack(MDL::Vector<NTL::ZZ> &vec,
                 const MPSecKey &sk,
                 const MPEncArray &ea,
-                bool negate = false);
+                bool negate = true);
 
     void multiplyBy(const MPEncVector &oth);
 

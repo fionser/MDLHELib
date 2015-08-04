@@ -18,12 +18,12 @@ MDL::Matrix<long> load_data(const std::string &file,
     return raw.div(1.0);
 }
 
-MPEncMatrix summation(std::vector<MPEncMatrix> &encMats)
+MPEncVector summation(std::vector<MPEncVector> &encMats)
 {
     std::atomic<long> counter(WORKER_NR);
     std::vector<std::thread> workers;
     auto addJob = [&encMats](std::atomic<long> &counter,
-                             MPEncMatrix &sum) {
+                             MPEncVector &sum) {
         long next;
         auto size = encMats.size();
         while ((next = counter.fetch_add(1)) < size) {
@@ -50,21 +50,21 @@ MPEncMatrix encryptAndSum(MDL::Timer &encTimer,
                           const MPPubKey &pk,
                           const MPEncArray &ea)
 {
-    const long BATCH = 2000;
+    const long BATCH = 500;
     std::vector<std::thread> worker;
     auto totalRows = X.rows();
-    MPEncMatrix result(pk);
+    MPEncVector result(pk);
 
-    result.pack(covariance(X[0], X[0]), ea);
+    result.pack(covariance(X[0], X[0]).vector(), ea);
     for (long from = 1; from < totalRows; from += BATCH) {
         const long to = std::min<long>(from + BATCH, totalRows);
-        std::vector<MPEncMatrix> encMats(to - from, pk);
+        std::vector<MPEncVector> encMats(to - from, pk);
         std::atomic<long> counter(from);
         std::vector<std::thread> workers;
         auto encryptJob = [&]() {
             long next;
             while ((next = counter.fetch_add(1)) < to) {
-                auto xx = covariance(X[next], X[next]);
+                auto xx = covariance(X[next], X[next]).vector();
                 encMats[next - from].pack(xx, ea);
             }
         };
@@ -75,12 +75,24 @@ MPEncMatrix encryptAndSum(MDL::Timer &encTimer,
         }
         for (auto &&wr : workers) wr.join();
         encTimer.end();
-
         evalTimer.start();
         result += summation(encMats);
         evalTimer.end();
     }
-    return result;
+
+    evalTimer.start();
+    auto cols = X.cols();
+    std::vector<MPEncVector> rows(cols, result);
+    for (long r = 0; r < cols; r++) {
+        MDL::Vector<long> masking(ea.slots());
+        for (long i = 0; i < cols; i++) {
+            masking[r * cols + i] = 1;
+        }
+        rows[r].mulConstant(masking, ea);
+        rotate(rows[r], ea, -r * cols);
+    }
+    evalTimer.end();
+    return MPEncMatrix(pk, rows);
 }
 
 int main(int argc, char *argv[]) {
@@ -102,19 +114,23 @@ int main(int argc, char *argv[]) {
     MPSecKey sk(context);
     MPPubKey pk(sk);
     MPEncArray ea(context);
+    std::cout << "slots " << ea.slots() << std::endl;
     MDL::Timer encTimer, evalTimer, decTimer;
 
     auto encMat = encryptAndSum(encTimer, evalTimer, X, pk, ea);
-
-    evalTimer.start();
-    auto pca = MDL::runPCA(encMat, ea, pk);
-    evalTimer.end();
-
-    decTimer.start();
-    MDL::Vector<ZZ> v1, v2;
-    pca.first.unpack(v1, sk, ea);
-    pca.second.unpack(v2, sk, ea);
-    decTimer.end();
-    std::cout << v1.L2() / v2.L2() / M / M << std::endl;
+    MDL::Matrix<NTL::ZZ> mmmt;
+    encMat.unpack(mmmt, sk, ea, true);
+    std::cout << mmmt << std::endl;
+    return 0;
+    // evalTimer.start();
+    // auto pca = MDL::runPCA(encMat, ea, pk);
+    // evalTimer.end();
+    //
+    // decTimer.start();
+    // MDL::Vector<ZZ> v1, v2;
+    // pca.first.unpack(v1, sk, ea);
+    // pca.second.unpack(v2, sk, ea);
+    // decTimer.end();
+    // std::cout << v1.L2() / v2.L2() / M / M << std::endl;
     return 0;
 }
