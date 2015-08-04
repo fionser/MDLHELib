@@ -1,0 +1,26 @@
+#ifndef MULTIPRECISION_MPCONTEXT_HPP
+#define MULTIPRECISION_MPCONTEXT_HPP
+#include "fhe/FHEcontext.h"
+#include <memory>
+#include <NTL/ZZ.h>
+#include <iostream>
+/// MultiPrecision FHEcontext
+class MPContext {
+public:
+    typedef std::shared_ptr<FHEcontext> contextPtr;
+    /// @param m, p, r is the same with FHEcontext
+    /// @param parts is how many parts to use
+    MPContext(long m, long p, long r, long parts);
+
+    void buildModChain(long L);
+    /// @return the specific FHEcontext
+    contextPtr get(int index) const { return contexts[index]; }
+
+    size_t partsNum() const { return contexts.size(); }
+
+    double precision() const;
+private:
+    ZZ plainSpace = NTL::to_ZZ(1);
+    std::vector<contextPtr> contexts;
+};
+#endif // multiprecision/mpcontext.hpp
