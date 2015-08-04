@@ -46,6 +46,7 @@ public:
 
     MPEncMatrix& operator-=(const MPEncMatrix &oth);
 
+    const MPEncVector& get(int index) const { return ctxts[index]; }
 private:
     const MPPubKey &_pk;
     std::vector<MPEncVector> ctxts;

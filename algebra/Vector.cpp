@@ -78,7 +78,7 @@ template<typename T>
 Vector<long> Vector<T>::div(long factor) const
 {
     Vector<long> vec(dimension());
-    std::transform(this->begin(), this->end(), vec.begin(), [&factor](T e) { return static_cast<long>(e / factor); });
+    std::transform(this->begin(), this->end(), vec.begin(), [&factor](T e) { return std::lround(e / factor); });
     return vec;
 }
 
@@ -115,6 +115,16 @@ Vector<T>& Vector<T>::operator-=(const Vector<T> &oth)
     auto dd = std::min(dimension(), oth.dimension());
     for (size_t d = 0; d < dd; d++) {
         this->at(d) -= oth[d];
+    }
+    return *this;
+}
+
+template<typename T>
+Vector<T>& Vector<T>::operator+=(const Vector<T> &oth)
+{
+    auto dd = std::min(dimension(), oth.dimension());
+    for (size_t d = 0; d < dd; d++) {
+        this->at(d) += oth[d];
     }
     return *this;
 }

@@ -38,6 +38,8 @@ public:
 
     Vector& operator*=(const T &val);
 
+    Vector& operator+=(const Vector<T> &oth);
+
     Vector& operator-=(const Vector<T> &oth);
 
     Vector<T> subvector(long startIndex, long endIndex) const;

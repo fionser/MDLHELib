@@ -33,6 +33,34 @@ Eigen::MatrixXd Matrix<U>::to_Eigen_matrix_format() const
 }
 
 template<typename T>
+Matrix<T>& Matrix<T>::operator+=(const Matrix<T> &oth)
+{
+    if (rows() != oth.rows() || cols() != oth.cols()) {
+        printf("warnning! Matrix operator +=\n");
+        return *this;
+    }
+
+    for (long r = 0; r < oth.rows(); r++) {
+        this->at(r) += oth[r];
+    }
+    return *this;
+}
+
+template<typename T>
+Matrix<T>& Matrix<T>::operator-=(const Matrix<T> &oth)
+{
+    if (rows() != oth.rows() || cols() != oth.cols()) {
+        printf("warnning! Matrix operator +=\n");
+        return *this;
+    }
+
+    for (long r = 0; r < oth.rows(); r++) {
+        this->at(r) -= oth[r];
+    }
+    return *this;
+}
+
+template<typename T>
 void Matrix<T>::from_Eigen_matrix(const Eigen::MatrixXd& mat)
 {
     auto rows = mat.rows();
@@ -156,6 +184,19 @@ Matrix<long>covariance(const Vector<long>& a, const Vector<long>& b)
     auto dim = a.dimension();
     assert(dim == b.dimension());
     Matrix<long> mat(dim, dim);
+    for (auto i = 0; i < dim; i++) {
+        mat[i] = a;
+        for (auto j = 0; j < dim; j++) mat[i][j] *= b[i];
+    }
+    return mat;
+}
+
+template<>
+Matrix<double>covariance(const Vector<double>& a, const Vector<double>& b)
+{
+    auto dim = a.dimension();
+    assert(dim == b.dimension());
+    Matrix<double> mat(dim, dim);
     for (auto i = 0; i < dim; i++) {
         mat[i] = a;
         for (auto j = 0; j < dim; j++) mat[i][j] *= b[i];

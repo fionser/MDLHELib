@@ -1,108 +1,112 @@
+#include "multiprecision/Multiprecision.h"
 #include "protocol/PCA.hpp"
 #include "algebra/NDSS.h"
-#include "utils/FHEUtils.hpp"
 #include "utils/timer.hpp"
 #include "utils/FileUtils.hpp"
-#include "fhe/EncryptedArray.h"
 #include <thread>
 #ifdef FHE_THREADS
 const long WORKER_NR = 8;
 #else
 const long WORKER_NR = 1;
 #endif
-long BATCH_SZE = 100;
-MDL::Timer totalTimer, encTimer;
-
-MDL::EncMatrix encrypt(const MDL::Matrix<double> &X,
-                       const FHEPubKey &pk,
-                       const EncryptedArray &ea,
-                       MDL::Timer &totalTimer,
-                       MDL::Timer &encTimer)
+MDL::Matrix<long> load_data(const std::string &file,
+                            long Magnifier = 100,
+                            long recordsToProcess = 0)
 {
-    const long divider = 10;
-    const long rows = X.rows();
-    long n = (rows + BATCH_SZE - 1) / BATCH_SZE;
-    std::vector<MDL::Matrix<long>> local_sigma(n);
-    totalTimer.end();
-    for (int i = 0; i < n; i++) {
-        long from = std::min(rows - 1, i * BATCH_SZE);
-        long to = std::min(rows - 1, from + BATCH_SZE - 1);
-        if (to + 1 < n && to - n < BATCH_SZE / 10) {
-            to = n - 1;
-            n -= 1;
-        }
-        auto submat = X.submatrix(from, to);
-        auto transpose = submat.transpose();
-        local_sigma[i] = transpose.dot(submat).div(divider);
-    }
+    auto raw = load_csv_d(file, recordsToProcess);
+    raw *= Magnifier;
+    return raw.div(1.0);
+}
 
-    std::vector<MDL::EncMatrix> encMat(n, pk);
+MPEncMatrix summation(std::vector<MPEncMatrix> &encMats)
+{
+    std::atomic<long> counter(WORKER_NR);
     std::vector<std::thread> workers;
-    std::atomic<long> counter(0);
+    auto addJob = [&encMats](std::atomic<long> &counter,
+                             MPEncMatrix &sum) {
+        long next;
+        auto size = encMats.size();
+        while ((next = counter.fetch_add(1)) < size) {
+            sum += encMats[next];
+        }
+    };
 
-    totalTimer.start();
-    encTimer.start();
     for (long wr = 0; wr < WORKER_NR; wr++) {
-        workers.push_back(std::move(std::thread([&counter, &ea, &n,
-                                                &encMat, &local_sigma]() {
-                                                long next;
-                                                while ((next = counter.fetch_add(1)) < n) {
-                                                encMat[next].pack(local_sigma[next], ea);
-                                                } })));
+        workers.push_back(std::thread(addJob,
+                                      std::ref(counter),
+                                      std::ref(encMats[wr])));
     }
-    for (auto &&wr : workers) wr.join();
-    encTimer.end();
 
-    for (long i = 1; i < n; i++) encMat[0] += encMat[i];
-    totalTimer.end();
-    return encMat[0];
+    for (auto &&wr : workers) wr.join();
+
+    for (long wr = 1; wr < WORKER_NR; wr++) encMats[0] += encMats[wr];
+
+    return encMats[0];
+}
+
+MPEncMatrix encryptAndSum(MDL::Timer &encTimer,
+                          MDL::Timer &evalTimer,
+                          const MDL::Matrix<long> &X,
+                          const MPPubKey &pk,
+                          const MPEncArray &ea)
+{
+    const long BATCH = 2000;
+    std::vector<std::thread> worker;
+    auto totalRows = X.rows();
+    MPEncMatrix result(pk);
+
+    result.pack(covariance(X[0], X[0]), ea);
+    for (long from = 1; from < totalRows; from += BATCH) {
+        const long to = std::min<long>(from + BATCH, totalRows);
+        std::vector<MPEncMatrix> encMats(to - from, pk);
+        std::atomic<long> counter(from);
+        std::vector<std::thread> workers;
+        auto encryptJob = [&]() {
+            long next;
+            while ((next = counter.fetch_add(1)) < to) {
+                auto xx = covariance(X[next], X[next]);
+                encMats[next - from].pack(xx, ea);
+            }
+        };
+
+        encTimer.start();
+        for (long wr = 0; wr < WORKER_NR; wr++) {
+            workers.push_back(std::thread(encryptJob));
+        }
+        for (auto &&wr : workers) wr.join();
+        encTimer.end();
+
+        evalTimer.start();
+        result += summation(encMats);
+        evalTimer.end();
+    }
+    return result;
 }
 
 int main(int argc, char *argv[]) {
-    long m, p, r, L;
-    ArgMapping argmap;
-    MDL::Timer keyTimer;
-    std::string file;
-    argmap.arg("m", m, "m");
-    argmap.arg("L", L, "L");
-    argmap.arg("p", p, "p");
-    argmap.arg("r", r, "r");
-    argmap.arg("B", BATCH_SZE, "BATCH_SZE");
-    argmap.parse(argc, argv);
+    ArgMapping argMap;
+    long m, p, r, L, N = 0, P = 0, M = 100;
+    argMap.arg("m", m, "m: cyclotomic");
+    argMap.arg("p", p, "p: plaintext space");
+    argMap.arg("r", r, "r: lifting");
+    argMap.arg("L", L, "L: Levels");
+    argMap.arg("N", N, "N: How many record to use");
+    argMap.arg("P", P, "P: How many primes to use");
+    argMap.arg("M", M, "M: Magnifier");
+    argMap.parse(argc, argv);
 
-    keyTimer.start();
-    FHEcontext context(m, p, r);
-    buildModChain(context, L);
-    FHESecKey  sk(context);
-    sk.GenSecKey(64);
-    addSome1DMatrices(sk);
-    FHEPubKey pk = sk;
-    auto G = context.alMod.getFactorsOverZZ()[0];
-    EncryptedArray ea(context, G);
-    keyTimer.end();
-    std::vector<std::string> files{};
-    for (auto &file : files) {
-        MDL::Timer totalTimer, encTimer, iterationTimer;
-        auto mat = load_csv_d(file);
-        long rows = mat.rows();
-        long dimension = mat.cols();
-        auto truePrincipleComp = mat.maxEigenValue() / rows;
-        printf("Dimension %ld, %f\n", dimension, truePrincipleComp);
+    auto X = load_data("float_adult.data", M, N);
 
-        totalTimer.start();
-        auto encMat = encrypt(mat, pk, ea, totalTimer, encTimer);
-        iterationTimer.start();
-        auto vecs = MDL::runPCA(encMat, ea, pk, dimension);
-        iterationTimer.end();
+    MPContext context(m, p, r, P);
+    context.buildModChain(L);
+    MPSecKey sk(context);
+    MPPubKey pk(sk);
+    MPEncArray ea(context);
+    MDL::Timer encTimer, evalTimer;
 
-        MDL::Vector<NTL::ZZX> vec(dimension), vec2(dimension);
-        vecs.first.unpack(vec, sk, ea, true);
-        vecs.second.unpack(vec2, sk, ea, true);
-        auto approx = vec.L2() / vec2.L2() / rows * 10;
-        totalTimer.end();
-        std::cout << file << " Enc " << encTimer.second() << " iteation " << iterationTimer.second()
-            << " total: " << totalTimer.second() << " error: "
-            << std::abs(approx - truePrincipleComp) / truePrincipleComp << std::endl;
-    }
+    auto encMat = encryptAndSum(encTimer, evalTimer, X, pk, ea);
+    MDL::Matrix<ZZ> result;
+    encMat.unpack(result, sk, ea, true);
+    std::cout << result << std::endl;
     return 0;
 }

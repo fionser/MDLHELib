@@ -30,6 +30,10 @@ public:
 
     Matrix& operator*=(const T &val);
 
+    Matrix& operator+=(const Matrix<T> &oth);
+
+    Matrix& operator-=(const Matrix<T> &oth);
+
     void random(const T &domain);
 
     Matrix<double> reduce(const double factor) const;
