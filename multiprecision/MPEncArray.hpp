@@ -17,9 +17,12 @@ public:
 
     std::vector<long> primes() const { return m_primes; }
 
+    std::vector<long> rPrimes() const ;
+
     NTL::ZZ plainSpace() const { return m_plainSpace; }
 private:
     long minimumSlot = 0;
+    long m_r = 1;
     NTL::ZZ m_plainSpace;
     std::vector<long> m_primes;
     std::vector<encArrayPtr> arrays;

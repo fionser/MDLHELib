@@ -1,8 +1,9 @@
 #include "MPEncArray.hpp"
 #include "MPContext.hpp"
 MPEncArray::MPEncArray(const MPContext &context)
-    : m_primes(context.primes()),
-      m_plainSpace(context.plainSpace())
+    : m_r(context.getR()),
+      m_plainSpace(context.plainSpace()),
+      m_primes(context.primes())
 {
     auto parts = context.partsNum();
     arrays.reserve(parts);
@@ -14,4 +15,14 @@ MPEncArray::MPEncArray(const MPContext &context)
             minimumSlot = arrays[i]->size();
         }
     }
+}
+
+std::vector<long> MPEncArray::rPrimes() const
+{
+    std::vector<long> rprimes = m_primes;
+
+    for (auto &p : rprimes) {
+        p = std::pow(p, m_r);
+    }
+    return rprimes;
 }

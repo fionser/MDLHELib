@@ -23,8 +23,11 @@ public:
     ZZ plainSpace() const { return m_plainSpace; }
 
     std::vector<long> primes() const { return m_primes; }
+
+    long getR() const { return m_r; }
 private:
     ZZ m_plainSpace = NTL::to_ZZ(1);
+    long m_r = 1;
     std::vector<long> m_primes;
     std::vector<contextPtr> contexts;
 };

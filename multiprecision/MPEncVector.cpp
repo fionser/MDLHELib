@@ -36,7 +36,7 @@ void MPEncVector::unpack(MDL::Vector<NTL::ZZ> &vec,
 {
     auto slots = ea.slots();
     const auto num = ea.arrayNum();
-    auto primes = ea.primes();
+    auto rPrimes = ea.rPrimes();
     auto plainSpace = ea.plainSpace();
     std::vector<MDL::Vector<long>> tmps(num);
     std::vector<std::thread> worker;
@@ -58,7 +58,7 @@ void MPEncVector::unpack(MDL::Vector<NTL::ZZ> &vec,
         for (long i = 0; i < num; i++)
             values[i] = tmps[i][s];
 
-        vec[s] = MDL::CRT(values, primes);
+        vec[s] = MDL::CRT(values, rPrimes);
         if (negate && vec[s] > (plainSpace >> 1)) {
             vec[s] -= plainSpace;
         }

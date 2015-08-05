@@ -45,12 +45,13 @@ static std::set<long> FindPrimes(long m, long p, long parts)
 }
 
 MPContext::MPContext(long m, long p, long r, long parts)
+	: m_r(r)
 {
     contexts.reserve(parts);
     auto primesSet = FindPrimes(m, p, parts);
 
-    for (auto &prime : primesSet) {
-        m_plainSpace *= prime;
+    for (auto prime : primesSet) {
+        m_plainSpace *= std::pow(prime, r);
         m_primes.push_back(prime);
     }
 
