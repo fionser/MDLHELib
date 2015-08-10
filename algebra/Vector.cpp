@@ -36,6 +36,18 @@ Vector<double> Vector<NTL::ZZX>::reduce(double factor) const {
 }
 
 template<>
+Vector<double> Vector<NTL::ZZ>::reduce(double factor) const {
+    Vector<double> vec(dimension());
+    std::transform(this->begin(), this->end(), vec.begin(),
+                   [&factor](const NTL::ZZ &v) {
+                   double d;
+                   NTL::conv(d, v);
+                   return d / factor;
+                   });
+    return vec;
+}
+
+template<>
 double Vector<NTL::ZZX>::L2() const {
     NTL::ZZ summation(0);
 
