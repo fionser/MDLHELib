@@ -13,14 +13,14 @@ class MPSecKey;
 
 class MPEncMatrix {
 public:
-    MPEncMatrix(const MPPubKey &pk);
+    MPEncMatrix() {}
 
-    MPEncMatrix(const MPPubKey &pk,
-                const std::vector<MPEncVector> &copy);
+    MPEncMatrix(const std::vector<MPEncVector> &copy);
 
     size_t rowsNum() const { return ctxts.size(); }
 
     void pack(const MDL::Matrix<long> &mat,
+              const MPPubKey &pk,
               const MPEncArray &ea);
 
     void unpack(MDL::Matrix<NTL::ZZ> &result,
@@ -29,10 +29,12 @@ public:
                 bool negate = true);
     /// assume that the matrix is symmetric
     MPEncVector sDot(const MPEncVector &oth,
+                     const MPPubKey &pk,
                      const MPEncArray &ea) const;
 
     MPEncMatrix& dot(const MPEncMatrix &oth,
                      const MPEncArray &ea,
+                     const MPPubKey &pk,
                      long columnToProces = 0);
 
     MPEncMatrix& addConstant(const MDL::Matrix<long> &con,
@@ -51,7 +53,11 @@ public:
 
     const MPEncVector& get(int index) const { return ctxts[index]; }
 private:
-    const MPPubKey &_pk;
+    // MPPubKey &_pk;
     std::vector<MPEncVector> ctxts;
 };
+
+MPEncMatrix mulMatrix(const MPEncVector &vec,
+                      const MDL::Matrix<long> &mat,
+                      const MPEncArray &ea);
 #endif // multiprecision/EncMatrix.hpp

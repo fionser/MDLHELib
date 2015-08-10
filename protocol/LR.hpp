@@ -4,6 +4,10 @@
 class FHEPubKey;
 class EncryptedArray;
 class EncMatrix;
+class MPPubKey;
+class MPEncArray;
+class MPEncMatrix;
+class MPEncVector;
 namespace MDL
 {
 namespace LR {
@@ -16,7 +20,16 @@ struct MatInverseParam {
     const long columnsToProcess;
 };
 
+struct MPMatInverseParam {
+    const MPPubKey &pk;
+    const MPEncArray &ea;
+    const long columnsToProcess;
+};
+
 EncMatrix inverse(const EncMatrix &Q, long mu,
                   const MatInverseParam &param);
+
+MPEncMatrix inverse(const MPEncMatrix &Q, const MPEncVector &mu,
+                    const MPMatInverseParam &param);
 } // namespace MDL
 #endif // MDL_LR_HPP

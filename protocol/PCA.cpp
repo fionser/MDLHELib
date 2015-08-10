@@ -35,7 +35,7 @@ std::pair<MPEncVector, MPEncVector> runPCA(const MPEncMatrix &mat,
     for (long it = 1; it < PCA::ITERATION; it++) {
         std::cout << "iteration " << it << std::endl;
         previousU = u;
-        u = mat.sDot(u, ea);
+        u = mat.sDot(u, pk, ea);
     }
     return {u, previousU};
 }

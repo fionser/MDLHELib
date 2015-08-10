@@ -92,7 +92,7 @@ MPEncMatrix encryptAndSum(MDL::Timer &encTimer,
         rotate(rows[r], ea, -r * cols);
     }
     evalTimer.end();
-    return MPEncMatrix(pk, rows);
+    return MPEncMatrix(rows);
 }
 
 int main(int argc, char *argv[]) {
@@ -126,10 +126,10 @@ int main(int argc, char *argv[]) {
     std::cout << "ea done" << std::endl;
     keyTimer.end();
     std::cout << "slots " << ea.slots() << " plainText: " << context.precision() << std::endl;
-    
-    
-    MPEncMatrix encMat(pk);
-    encMat.pack(X, ea);
+
+
+    MPEncMatrix encMat;
+    encMat.pack(X, pk, ea);
     //auto encMat = encryptAndSum(encTimer, evalTimer, X, pk, ea);
 
     std::cout << "run PCA" << std::endl;

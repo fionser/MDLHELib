@@ -6,9 +6,33 @@
 #include "algebra/NDSS.h"
 #include "utils/timer.hpp"
 #include "utils/FileUtils.hpp"
+#include "multiprecision/multiprecision.h"
 #include <thread>
 namespace MDL
 {
+MPEncMatrix inverse(const MPEncMatrix &Q, const MPEncVector &mu,
+                    const MPMatInverseParam &param) {
+    auto M(Q), R(Q);
+    auto MU(mu);
+    auto I = MDL::eye(param.columnsToProcess); I *= 2;
+    for (int i = 0; i < MDL::LR::ITERATION; i++) {
+        auto tmp(M);
+        tmp.negate();
+        auto muI = mulMatrix(MU, I, param.ea);
+        tmp += muI; // tmp = 2 * mu * I - M
+        if (i != 0) {
+            R.dot(tmp, param.ea, param.pk,
+                  param.columnsToProcess); // R = R(2 * mu * I - M)
+        } else {
+            R = tmp;
+        }
+        M.dot(tmp, param.ea, param.pk,
+              param.columnsToProcess); // M = M(2 * mu * I - M)
+        MU.multiplyBy(MU);
+    }
+    return R;
+}
+
 EncMatrix inverse(const EncMatrix &Q, long mu,
                   const MatInverseParam &param)
 {

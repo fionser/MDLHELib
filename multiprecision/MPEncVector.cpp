@@ -46,7 +46,7 @@ void MPEncVector::unpack(MDL::Vector<NTL::ZZ> &vec,
        while ((i = counter.fetch_add(1)) < num) {
            bool ok = ctxts[i].unpack(tmps[i], *sk.get(i), *ea.get(i));
            if (!ok) printf("Warning! the decryption maybe incorrect!\n");
-       }     
+       }
     };
 
     for (long wr = 0; wr < WORKER_NR; wr++) worker.push_back(std::thread(job));
@@ -73,20 +73,20 @@ void MPEncVector::negate()
 void MPEncVector::multiplyBy(const MPEncVector &oth)
 {
     std::vector<std::thread> worker;
-    std::atomic<long> counter(0); 
+    std::atomic<long> counter(0);
     const auto num = oth.ctxts.size();
     auto job = [&counter, &num, this, &oth]() {
         long i;
         while ((i = counter.fetch_add(1)) < num) {
             ctxts[i].multiplyBy(oth.ctxts[i]);
-        } 
+        }
     };
 
     if (num != ctxts.size()) {
         printf("Error! MPEncVectors multiplyBy!\n");
         return;
     }
-    
+
 
     for (long wr = 0; wr < WORKER_NR; wr++) worker.push_back(std::thread(job));
 
@@ -96,25 +96,25 @@ void MPEncVector::multiplyBy(const MPEncVector &oth)
 MPEncVector& MPEncVector::operator*=(const MPEncVector &oth)
 {
     std::vector<std::thread> worker;
-    std::atomic<long> counter(0); 
+    std::atomic<long> counter(0);
     const auto num = oth.ctxts.size();
     auto job = [&counter, &num, this, &oth]() {
         long i;
         while ((i = counter.fetch_add(1)) < num) {
             ctxts[i] *= oth.ctxts[i];
-        } 
+        }
     };
 
     if (num != ctxts.size()) {
         printf("Error! MPEncVectors operator*=!\n");
         return *this;
     }
-    
+
 
     for (long wr = 0; wr < WORKER_NR; wr++) worker.push_back(std::thread(job));
 
     for (auto &&wr : worker) wr.join();
-    
+
     return *this;
 }
 

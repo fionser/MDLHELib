@@ -9,17 +9,14 @@ const long WORKER_NR = 8;
 const long WORKER_NR = 1;
 #endif
 
-MPEncMatrix::MPEncMatrix(const MPPubKey &pk) : _pk(pk) {}
-
-MPEncMatrix::MPEncMatrix(const MPPubKey &pk,
-                         const std::vector<MPEncVector> &copy)
-    : _pk(pk) { ctxts = copy; }
+MPEncMatrix::MPEncMatrix(const std::vector<MPEncVector> &copy) { ctxts = copy; }
 
 void MPEncMatrix::pack(const MDL::Matrix<long> &mat,
+                       const MPPubKey &pk,
                        const MPEncArray &ea)
 {
     auto rows = mat.rows();
-    ctxts.resize(rows, _pk);
+    ctxts.resize(rows, pk);
 
     for (long r = 0; r < rows; r++) {
         ctxts[r].pack(mat[r], ea);
@@ -40,9 +37,10 @@ void MPEncMatrix::unpack(MDL::Matrix<NTL::ZZ> &result,
 }
 
 MPEncVector MPEncMatrix::sDot(const MPEncVector &oth,
+                              const MPPubKey &pk,
                               const MPEncArray &ea) const
 {
-    std::vector<MPEncVector> parts(rowsNum(), _pk);
+    std::vector<MPEncVector> parts(rowsNum(), pk);
     for (long c = 0; c < rowsNum(); c++) {
         auto tmp(oth);
         replicate(tmp, ea, c);
@@ -59,13 +57,14 @@ MPEncVector MPEncMatrix::sDot(const MPEncVector &oth,
 
 MPEncMatrix& MPEncMatrix::dot(const MPEncMatrix &oth,
                               const MPEncArray &ea,
+                              const MPPubKey &pk,
                               long columnToProces)
 {
     if (columnToProces <= 0) columnToProces = ea.slots();
     auto rows = rowsNum();
 
     for (long row = 0; row < rows; row++) {
-        MPEncVector oneRow(_pk);
+        MPEncVector oneRow(pk);
         for (long col = 0; col < columnToProces; col++) {
             auto tmp(ctxts[row]);
             replicate(tmp, ea, col);
@@ -142,4 +141,16 @@ MPEncMatrix& MPEncMatrix::operator-=(const MPEncMatrix &oth)
         ctxts[r] -= oth.ctxts[r];
     }
     return *this;
+}
+
+MPEncMatrix mulMatrix(const MPEncVector &vec,
+                      const MDL::Matrix<long> &mat,
+                      const MPEncArray &ea)
+{
+    std::vector<MPEncVector> ctxts;
+    for (auto &row : mat) {
+        auto tmp(vec);
+        ctxts.push_back(tmp.mulConstant(row, ea));
+    }
+    return MPEncMatrix(ctxts);
 }
