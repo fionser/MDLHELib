@@ -52,8 +52,7 @@ void benchmarkLR(const MPContext &context,
     auto factor = NTL::power(NTL::to_ZZ(_MU[0]), 3);
     double dfactor;
     NTL::conv(dfactor, factor);
-    _W.reduce(dfactor);
-    std::cout << _W << std::endl;
+    std::cout << _W.reduce(dfactor) << std::endl;
     printf("%f %f\n", evalTimer.second(), decTimer.second());
 }
 

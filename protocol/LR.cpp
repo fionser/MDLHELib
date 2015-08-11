@@ -6,7 +6,7 @@
 #include "algebra/NDSS.h"
 #include "utils/timer.hpp"
 #include "utils/FileUtils.hpp"
-#include "multiprecision/multiprecision.h"
+#include "multiprecision/Multiprecision.h"
 #include <thread>
 namespace MDL
 {
@@ -20,14 +20,20 @@ MPEncMatrix inverse(const MPEncMatrix &Q, const MPEncVector &mu,
         tmp.negate();
         auto muI = mulMatrix(MU, I, param.ea);
         tmp += muI; // tmp = 2 * mu * I - M
-        if (i != 0) {
-            R.dot(tmp, param.ea, param.pk,
-                  param.columnsToProcess); // R = R(2 * mu * I - M)
-        } else {
-            R = tmp;
-        }
-        M.dot(tmp, param.ea, param.pk,
-              param.columnsToProcess); // M = M(2 * mu * I - M)
+        auto th1 = std::thread([&i, &R, &tmp, &param]() {
+                               if (i != 0) {
+                               R.dot(tmp, param.ea, param.pk,
+                                     param.columnsToProcess); // R = R(2 * mu * I - M)
+                               } else {
+                               R = tmp;
+                               }
+                               });
+        auto th2 = std::thread([&tmp, &M, &param]() {
+                               M.dot(tmp, param.ea, param.pk,
+                                     param.columnsToProcess); // M = M(2 * mu * I - M)
+                               });
+        th1.join();
+        th2.join();
         MU.multiplyBy(MU);
     }
     return R;
