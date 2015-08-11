@@ -3,6 +3,7 @@
 #include "utils/timer.hpp"
 #include "utils/FileUtils.hpp"
 #include "protocol/LR.hpp"
+#include "protocol/PCA.hpp"
 #include <thread>
 #ifdef FHE_THREADS
 const long WORKER_NR = 8;
@@ -25,35 +26,47 @@ void benchmarkLR(const MPContext &context,
     MPEncMatrix XtX;
     MPEncVector XtY(pk), MU(pk);
     MDL::Timer evalTimer, decTimer;
-    auto _raw = load_csv("LR_10");
+    auto _raw = load_csv("LR_100");
     auto _XtX = _raw.submatrix(0, -1, 0, 4);
     auto _XtY = _raw.submatrix(0, -1, 5, 5).vector();
     MDL::Vector<long> _MU(_XtY.dimension());
 
-    for (long i = 0; i < _MU.dimension(); i++) _MU[i] = 10000;
 
     std::cout << "trueW " << getTrueW(_XtX, _XtY) << std::endl;
     XtX.pack(_XtX, pk, ea);
     XtY.pack(_XtY, ea);
-    MU.pack(_MU, ea);
-
-    MDL::MPMatInverseParam param = {pk, ea, 5};
     evalTimer.start();
+    auto pair = MDL::runPCA(XtX, ea, pk);
+	{
+		MDL::Vector<ZZ> v1, v2;
+	    pair.first.unpack(v1, sk, ea);
+	    pair.second.unpack(v2, sk, ea);
+		auto mu = long(v1.L2() / v2.L2());
+		for (long i = 0; i < _MU.dimension(); i++) _MU[i] = mu;
+    	MU.pack(_MU, ea);
+		std::cout << "MU " << mu << std::endl;
+	}
+
+	MDL::Timer lrEvalTimer;
+	lrEvalTimer.start();
+    MDL::MPMatInverseParam param = {pk, ea, 5};
     auto inv = MDL::inverse(XtX, MU, param);
 
     auto W = inv.sDot(XtY, pk, ea);
     evalTimer.end();
+	lrEvalTimer.end();
 
     MDL::Vector<NTL::ZZ> _W;
     decTimer.start();
     W.unpack(_W, sk, ea);
     decTimer.end();
 
-    auto factor = NTL::power(NTL::to_ZZ(_MU[0]), 3);
+    auto factor = NTL::power(NTL::to_ZZ(_MU[0]), std::pow(2, MDL::LR::ITERATION));
     double dfactor;
     NTL::conv(dfactor, factor);
     std::cout << _W.reduce(dfactor) << std::endl;
-    printf("%f %f\n", evalTimer.second(), decTimer.second());
+    printf("%f %f %f\n", evalTimer.second(), lrEvalTimer.second(),
+		   decTimer.second());
 }
 
 int main(int argc, char *argv[]) {
