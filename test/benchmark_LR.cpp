@@ -24,6 +24,7 @@ void benchmarkLR(const MPContext &context,
 {
     MPEncMatrix XtX;
     MPEncVector XtY(pk), MU(pk);
+    MDL::Timer evalTimer, decTimer;
     auto _raw = load_csv("LR_10");
     auto _XtX = _raw.submatrix(0, -1, 0, 4);
     auto _XtY = _raw.submatrix(0, -1, 5, 5).vector();
@@ -37,12 +38,23 @@ void benchmarkLR(const MPContext &context,
     MU.pack(_MU, ea);
 
     MDL::MPMatInverseParam param = {pk, ea, 5};
+    evalTimer.start();
     auto inv = MDL::inverse(XtX, MU, param);
 
     auto W = inv.sDot(XtY, pk, ea);
+    evalTimer.end();
+
     MDL::Vector<NTL::ZZ> _W;
+    decTimer.start();
     W.unpack(_W, sk, ea);
+    decTimer.end();
+
+    auto factor = NTL::power(NTL::to_ZZ(_MU[0]), 3);
+    double dfactor;
+    NTL::conv(dfactor, factor);
+    _W.reduce(dfactor);
     std::cout << _W << std::endl;
+    printf("%f %f\n", evalTimer.second(), decTimer.second());
 }
 
 int main(int argc, char *argv[]) {
