@@ -26,7 +26,7 @@ void benchmarkLR(const MPContext &context,
     MPEncMatrix XtX;
     MPEncVector XtY(pk), MU(pk);
     MDL::Timer evalTimer, decTimer;
-    auto _raw = load_csv("LR_100");
+    auto _raw = load_csv("LR_1000");
     auto _XtX = _raw.submatrix(0, -1, 0, 4);
     auto _XtY = _raw.submatrix(0, -1, 5, 5).vector();
     MDL::Vector<long> _MU(_XtY.dimension());
@@ -36,12 +36,13 @@ void benchmarkLR(const MPContext &context,
     XtX.pack(_XtX, pk, ea);
     XtY.pack(_XtY, ea);
     evalTimer.start();
-    auto pair = MDL::runPCA(XtX, ea, pk);
+    /* auto pair = MDL::runPCA(XtX, ea, pk); */
 	{
-		MDL::Vector<ZZ> v1, v2;
-	    pair.first.unpack(v1, sk, ea);
-	    pair.second.unpack(v2, sk, ea);
-		auto mu = long(v1.L2() / v2.L2());
+		/* MDL::Vector<ZZ> v1, v2; */
+	    /* pair.first.unpack(v1, sk, ea); */
+	    /* pair.second.unpack(v2, sk, ea); */
+		/* auto mu = long(v1.L2() / v2.L2()); */
+	    long mu = 39181609071;
 		for (long i = 0; i < _MU.dimension(); i++) _MU[i] = mu;
     	MU.pack(_MU, ea);
 		std::cout << "MU " << mu << std::endl;

@@ -12,7 +12,7 @@ namespace MDL
 {
 namespace LR {
 const long ITERATION = 2;
-} //namespace LR
+} //namespace
 
 struct MatInverseParam {
     const FHEPubKey &pk;
