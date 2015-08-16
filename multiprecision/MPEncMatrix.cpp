@@ -65,6 +65,7 @@ MPEncMatrix& MPEncMatrix::dot(const MPEncMatrix &oth,
 
     for (long row = 0; row < rows; row++) {
         MPEncVector oneRow(pk);
+
         for (long col = 0; col < columnToProces; col++) {
             auto tmp(ctxts[row]);
             replicate(tmp, ea, col);
