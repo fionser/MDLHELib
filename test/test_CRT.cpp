@@ -29,21 +29,21 @@ FHE setFHE(long m, long p, long r, long L)
 
 int main() {
     std::vector<long> a{2, 30};
-
-    auto fhe1 = setFHE(1031, 2, 2, 3);
-    auto fhe2 = setFHE(1031, 5, 2, 3);
-    Ctxt c1(*fhe1.pk), c2(*fhe2.pk);
-    fhe1.ea->encrypt(c1, *fhe1.pk, a);
-    fhe2.ea->encrypt(c2, *fhe2.pk, a);
-
-    c1 += c1;
-    c2 += c2;
-    std::vector<long> v1, v2;
-    fhe1.ea->decrypt(c1, *fhe1.sk, v1);
-    fhe2.ea->decrypt(c2, *fhe2.sk, v2);
-    std::cout << v1 << std::endl;
-    std::cout << v2 << std::endl;
-    std::cout << MDL::CRT({v1[0], v2[0]}, {4, 25}) << std::endl;
-    std::cout << MDL::CRT({v1[1], v2[1]}, {4, 25}) << std::endl;
+    std::cout << MDL::CRT({5, 8}, {17, 13}) << std::endl;
+    // auto fhe1 = setFHE(1031, 2, 2, 3);
+    // auto fhe2 = setFHE(1031, 5, 2, 3);
+    // Ctxt c1(*fhe1.pk), c2(*fhe2.pk);
+    // fhe1.ea->encrypt(c1, *fhe1.pk, a);
+    // fhe2.ea->encrypt(c2, *fhe2.pk, a);
+    //
+    // c1 += c1;
+    // c2 += c2;
+    // std::vector<long> v1, v2;
+    // fhe1.ea->decrypt(c1, *fhe1.sk, v1);
+    // fhe2.ea->decrypt(c2, *fhe2.sk, v2);
+    // std::cout << v1 << std::endl;
+    // std::cout << v2 << std::endl;
+    // std::cout << MDL::CRT({v1[0], v2[0]}, {4, 25}) << std::endl;
+    // std::cout << MDL::CRT({v1[1], v2[1]}, {4, 25}) << std::endl;
     return 0;
 }

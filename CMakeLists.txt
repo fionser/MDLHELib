@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 2.8)
 project(MDLHELib)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-set(CMAKE_EXE_LINKER_FLAGS "${CMKAE_EXE_LINKER_FLAGS} -lntl -lgmp -lpthread")
-
-add_definitions(-DFHE_THREADS)
+set(CMAKE_EXE_LINKER_FLAGS "${CMKAE_EXE_LINKER_FLAGS} -lntl -lgmp -lpthread -lnanomsg")
+add_definitions(-DNFHE_THREADS)
 add_subdirectory(HElib/fhe lib/fhe)
 add_subdirectory(utils lib/utils)
 add_subdirectory(algebra lib/algebra)
 add_subdirectory(protocol lib/protocol)
 add_subdirectory(multiprecision lib/multiprecision)
+add_subdirectory(paillier lib/paillier)
 add_subdirectory(test bin/test)
+
