@@ -2,115 +2,128 @@
 #include <nanomsg/reqrep.h>
 #include <iostream>
 #include <strstream>
-#include "fhe/FHEcontext.h"
+#include "fhe/FHEContext.h"
 #include "fhe/FHE.h"
-struct package {
-    long total_byte;
-    const char *buf;
-};
-
-void server(int sock) {
-    FHEcontext context(64, 1031, 1);
-    buildModChain(context, 3);
-
-    package pkg;
-    nn_recv (sock, &(pkg.total_byte), sizeof(pkg.total_byte), 0);
-    char *buf = new char[pkg.total_byte];
-    pkg.buf = buf;
-    int byte = 0;
-    char *p = buf;
-    auto need_to_read = pkg.total_byte;
-    do {
-        int read = nn_recv(sock, p, need_to_read, 0);
-        if (read < 0) {
-            printf("%s\n", nn_strerror(errno));
-            exit(-1);
-        }
-        byte += read;
-        p += read;
-        need_to_read -= read;
-    } while (need_to_read > 0);
-
-    FHEPubKey pk(context);
-    {
-        std::stringstream sstream(pkg.buf, pkg.total_byte);
-        sstream >> pk;
+#include "network/network.hpp"
+void receive_pk(int socket, FHEPubKey &pk) {
+    char *buf;
+    int read;
+    if ((read = nn_recv(socket, &buf, NN_MSG, 0)) < 0) {
+        printf("receive pk error %s\n", nn_strerror(errno));
+        exit(-1);
     }
-
-    Ctxt c1(pk);
-    pk.Encrypt(c1, NTL::to_ZZX(2));
-    {
-        std::cout << c1 << std::endl;
-        std::stringstream sstream;
-        sstream << c1;
-        const auto &str = sstream.str();
-        package pkg = {(long)str.size(), str.c_str()};
-        nn_send(sock, &pkg.total_byte, sizeof(pkg.total_byte), 0);
-        printf("ctxt size %ld\n", pkg.total_byte);
-        nn_send(sock, pkg.buf, pkg.total_byte, 0);
-    }
-    delete []buf;
+    std::stringstream sstream;
+    sstream.str(buf);
+    sstream >> pk;
+    nn_freemsg(buf);
 }
 
-void client(int sock) {
-    FHEcontext context(64, 1031, 1);
+void send_pk(int socket, const FHEPubKey &pk) {
+    std::stringstream sstream;
+    sstream << pk;
+    auto str = sstream.str();
+    if (nn_send(socket, str.c_str(), str.size(), 0) < 0) {
+        printf("send pk error %s\n", nn_strerror(errno));
+        exit(-1);
+    }
+}
+
+void send_ctxts(int socket, const std::vector<Ctxt> &ctxts) {
+    std::vector<void *> data;
+    std::vector<size_t> lens;
+    std::stringstream sstream;
+
+    for (auto &ctxt : ctxts) {
+        sstream.str("");
+        sstream << ctxt;
+        auto str = sstream.str();
+        auto len = str.size();
+        auto tmp = nn_allocmsg(len, 0);
+        std::memcpy(tmp, str.c_str(), len);
+        data.push_back(tmp);
+        lens.push_back(len);
+    }
+
+    MDL::net::msg_header *hdr;
+    MDL::net::make_header(&hdr, lens);
+    nn_send(socket, hdr, MDL::net::header_size(hdr), 0);
+    nn_recv(socket, NULL, 0, 0);
+
+    struct nn_msghdr nn_hdr;
+    MDL::net::make_nn_header(&nn_hdr, data, lens);
+    nn_sendmsg(socket, &nn_hdr, 0);
+    MDL::net::free_header(&nn_hdr, true);
+}
+
+void receive_ctxt(int socket, const FHEPubKey &pk,
+                  std::vector<Ctxt> &ctxts) {
+    std::stringstream sstream;
+    char *buf;
+    nn_recv(socket, &buf, NN_MSG, 0);
+    nn_send(socket, NULL, 0, 0);
+    MDL::net::msg_header *hdr = (MDL::net::msg_header *)buf;
+
+    std::vector<size_t> lens(hdr->msg_ele_sze,
+                             hdr->msg_ele_sze + hdr->msg_ele_nr);
+    struct nn_msghdr nn_hdr;
+    MDL::net::make_nn_header(&nn_hdr, lens);
+    nn_recvmsg(socket, &nn_hdr, 0);
+
+    Ctxt c(pk);
+    for (size_t i = 0; i < nn_hdr.msg_iovlen; i++) {
+        sstream.str((char *)nn_hdr.msg_iov[i].iov_base);
+        sstream >> c;
+        ctxts.push_back(c);
+    }
+}
+
+void act_server(int socket) {
+    FHEcontext context(1024, 1031, 1);
+    buildModChain(context, 3);
+    FHEPubKey pk(context);
+    receive_pk(socket, pk);
+    std::vector<Ctxt> ctxts(2, pk);
+    pk.Encrypt(ctxts[0], NTL::to_ZZX(3));
+    pk.Encrypt(ctxts[1], NTL::to_ZZX(3));
+    ctxts[1].multiplyBy(ctxts[0]);
+    send_ctxts(socket, ctxts);
+    nn_close(socket);
+}
+
+void act_client(int socket) {
+    FHEcontext context(1024, 1031, 1);
     buildModChain(context, 3);
     FHESecKey sk(context);
     sk.GenSecKey(64);
-    const FHEPubKey &pk = sk;
-
-    std::stringstream sstream;
-    sstream << pk;
-    const auto &str = sstream.str();
-    package pkg = { (long)str.size(), str.c_str() };
-    long *tp = &pkg.total_byte;
-    printf("going to send %ld\n", *tp);
-    nn_send(sock, tp, sizeof(pkg.total_byte), 0);
-    nn_send(sock, pkg.buf, pkg.total_byte, 0);
-    {
-        nn_recv(sock, &pkg.total_byte, sizeof(pkg.total_byte), 0);
-        auto need_to_read = pkg.total_byte;
-        printf("need to read %ld\n", need_to_read);
-        char *buf = new char[pkg.total_byte];
-        char *p = buf;
-        do {
-            int read = nn_recv(sock, p, need_to_read, 0);
-            if (read < 0) {
-                printf("recv error: %s\n", nn_strerror(errno));
-                exit(-1);
-            }
-            need_to_read -= read;
-            p += read;
-        } while (need_to_read > 0);
-
-        printf("read %ld : %s\n", pkg.total_byte - need_to_read, buf);
-        std::stringstream sstream(buf, pkg.total_byte);
-        Ctxt c1(pk);
-        sstream >> c1;
-        NTL::ZZX plain;
-        sk.Decrypt(plain, c1);
-        std::cout << plain << std::endl;
-        delete []buf;
+    FHEPubKey &pk = sk;
+    send_pk(socket, pk);
+    std::vector<Ctxt> ctxts;
+    receive_ctxt(socket, pk, ctxts);
+    NTL::ZZX plain;
+    for (auto &ctxt : ctxts) {
+        sk.Decrypt(plain, ctxt);
+        std::cout << plain << "\n";
     }
+    nn_close(socket);
 }
 
 int main(int argc, char *argv[]) {
     if (argc > 1) {
         int sock = nn_socket(AF_SP, NN_REP);
-        if (nn_bind(sock, "tcp://127.0.0.1:12345") < 0) {
+        if (nn_bind(sock, "ipc:///tmp/reqrep.ipc") < 0) {
             printf("%s\nn", nn_strerror(errno));
             return -1;
         }
         printf("SID %d\n", sock);
-        server(sock);
+        act_server(sock);
     } else {
         int sock = nn_socket(AF_SP, NN_REQ);
-        if (nn_connect(sock, "tcp://127.0.0.1:12345") < 0) {
+        if (nn_connect(sock, "ipc:///tmp/reqrep.ipc") < 0) {
             printf("%s\nn", nn_strerror(errno));
             return -1;
         }
         printf("SID %d\n", sock);
-        client(sock);
+        act_client(sock);
     }
     return 0;
 }

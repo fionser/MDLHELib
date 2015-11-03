@@ -9,5 +9,6 @@ add_subdirectory(algebra lib/algebra)
 add_subdirectory(protocol lib/protocol)
 add_subdirectory(multiprecision lib/multiprecision)
 add_subdirectory(paillier lib/paillier)
+add_subdirectory(network lib/net)
 add_subdirectory(test bin/test)
 
