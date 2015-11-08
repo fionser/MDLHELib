@@ -10,7 +10,6 @@ add_executable(test_CRT test_CRT.cpp)
 add_executable(test_MPContext test_MPContext.cpp)
 add_executable(test_mode test_mode.cpp)
 add_executable(test_paillier test_paillier.cpp)
-#add_executable(test_openmp test_openmp.cpp)
 add_executable(test_network test_network.cpp)
 
 add_executable(benchmark_FHE_primitives benchmark_FHE_primitives.cpp)
@@ -19,6 +18,7 @@ add_executable(benchmark_PCA benchmark_PCA.cpp)
 add_executable(benchmark_percentile benchmark_percentile.cpp)
 add_executable(benchmark_LR benchmark_LR.cpp)
 add_executable(benchmark_covariance benchmark_covariance.cpp)
+add_executable(benchmark_paillier benchmark_paillier.cpp)
 
 target_link_libraries(test_EncryptVector algebra utils fhe)
 target_link_libraries(test_Matrix algebra utils)
@@ -37,6 +37,7 @@ target_link_libraries(benchmark_mean_variance algebra utils fhe)
 target_link_libraries(benchmark_percentile protocol utils algebra fhe)
 target_link_libraries(benchmark_LR protocol algebra utils multiprecision  fhe)
 target_link_libraries(benchmark_covariance protocol algebra utils fhe)
+target_link_libraries(benchmark_paillier algebra utils paillier fhe)
 
 file(COPY adult_result adult.data covariance.data all_float_data DESTINATION .)
 
