@@ -11,9 +11,10 @@ std::vector<MDL::Paillier::Ctxt> encrypt(const MDL::Matrix<long> &data,
     MDL::Paillier::Ctxt c(pk);
     std::vector<MDL::Paillier::Ctxt> ctxts(data.rows(), c);
 	omp_set_num_threads(sysconf( _SC_NPROCESSORS_ONLN ));
+	printf("to enc\n");
 #pragma omp parallel for
     for (long i = 0; i < data.rows(); i++) {
-        pk.Pack(ctxts[i], data[i]);
+        pk.Pack(ctxts[i], data[i], 32);
     }
     timer.end();
     printf("Enc %zd records cost %f sec\n", data.rows(), timer.second());
@@ -38,7 +39,7 @@ MDL::Paillier::Ctxt mean(const std::vector<MDL::Paillier::Ctxt> &ctxts) {
 
 int main(int argc, char *argv[]) {
     std::string file;
-    long key_len = 1024;
+    long key_len = 1100;
     ArgMapping argmap;
     argmap.arg("f", file, "file");
     argmap.arg("k", key_len, "key length");
@@ -46,19 +47,14 @@ int main(int argc, char *argv[]) {
 
     auto data = load_csv(file);
 
-    auto keys = MDL::Paillier::GenKey(key_len, 8);
+    auto keys = MDL::Paillier::GenKey(key_len);
     MDL::Paillier::SecKey sk(keys.first);
     MDL::Paillier::PubKey pk(keys.second);
-
-	auto &primes = pk.GetPrimes();
-	for (auto &p : primes)
-		std::cout << NTL::NumBits(p) << " ";
-	std::cout << "\n";
 
     auto ctxts = encrypt(data, pk);
 	auto res = mean(ctxts);
 	std::vector<NTL::ZZ> slots;
-	sk.Unpack(slots, res);
+	sk.Unpack(slots, res, 32);
 	for (auto s : slots) {
 		std::cout << s << " ";
 	}

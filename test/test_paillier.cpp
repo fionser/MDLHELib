@@ -62,7 +62,7 @@ NTL::ZZ Decrypt(LCtxt &c, MDL::Paillier::SecKey &sk) {
 }
 
 int main() {
-    auto keys = MDL::Paillier::GenKey(1024, 8);
+    auto keys = MDL::Paillier::GenKey(1024);
     MDL::Paillier::SecKey sk(keys.first);
     MDL::Paillier::PubKey pk(keys.second);
     std::vector<long> slots = {1<<16, 2, 3};

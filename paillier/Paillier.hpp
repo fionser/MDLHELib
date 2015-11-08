@@ -11,14 +11,14 @@ typedef std::vector<NTL::ZZ> PrimeSet;
 
 class PubKey {
 public:
-    explicit PubKey(const NTL::ZZ &n, const long slot_nr = 1);
+    explicit PubKey(const NTL::ZZ &n);
     PubKey(const PubKey &oth);
     PubKey& operator=(const PubKey &oth) = delete;
     bool operator==(const PubKey &oth) const;
     ~PubKey() {}
     void Encrypt(Ctxt &ctxt, const NTL::ZZ &plain) const;
     void Encrypt(Ctxt &ctxt, const long plain) const;
-    void Pack(Ctxt &ctxt, const std::vector<long> &slots) const;
+    void Pack(Ctxt &ctxt, const std::vector<long> &slots, int bits) const;
     const NTL::ZZ& GetN() const;
     const NTL::ZZ& GetG() const;
     const NTL::ZZ& GetN2() const;
@@ -39,7 +39,7 @@ public:
     void Encrypt(Ctxt &ctxt, const long plain) const;
     void Decrypt(NTL::ZZ &plain, const Ctxt &ctxt) const;
     void Decrypt(long &plain, const Ctxt &ctxt) const;
-    void Unpack(std::vector<NTL::ZZ> &slots, const Ctxt &ctxt) const;
+    void Unpack(std::vector<NTL::ZZ> &slots, const Ctxt &ctxt, int bits) const;
     const PubKey &GetPk() const;
 private:
     class SecKeyImp; // implementation
@@ -69,7 +69,7 @@ private:
     std::shared_ptr<CtxtImp> imp = nullptr;
 };
 
-std::pair<SecKey, PubKey> GenKey(long bits, long slot_nr = 1);
+std::pair<SecKey, PubKey> GenKey(long bits);
 }// namespace Paillier
 }// namespace MDL
 #endif // MDL_PAILLER_HPP
