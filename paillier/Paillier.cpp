@@ -1,6 +1,7 @@
 #include "Paillier.hpp"
 #include "algebra/CRT.hpp"
 #include <cassert>
+#include "algorithm"
 namespace MDL {
 namespace Paillier {
 class Ctxt::CtxtImp {
@@ -151,8 +152,7 @@ public:
             auto bits_to_gen = std::min(target_bits_len, bits_each);
             while (trial++ < 30) {
                 long prime = NTL::RandomPrime_long(bits_to_gen);
-                if (std::find(primes.begin(), primes.end(),
-                              prime) == primes.end()) {
+                if (std::find(primes.begin(), primes.end(), prime) == primes.end()) {
                     primes.push_back(prime);
                     target_bits_len -= NTL::NumBits(prime);
                     break;

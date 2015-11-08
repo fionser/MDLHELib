@@ -1,5 +1,6 @@
 #include "network.hpp"
 #include <nanomsg/nn.h>
+#include <cstring>
 namespace MDL {
 namespace net {
 size_t header_size(const msg_header *hdr) {
