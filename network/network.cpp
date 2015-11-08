@@ -1,5 +1,9 @@
 #include "network.hpp"
+#include "paillier/Paillier.hpp"
 #include <nanomsg/nn.h>
+#include <iostream>
+#include <sstream>
+#include <string>
 namespace MDL {
 namespace net {
 size_t header_size(const msg_header *hdr) {
@@ -57,5 +61,40 @@ void free_header(struct nn_msghdr *hdr, bool free_base) {
 void free_header(struct msg_header *hdr) {
     nn_freemsg(hdr);
 }
+
+template <class T>
+long receive(T &obj, int socket) {
+    char *buf;
+    long read;
+    if ((read = nn_recv(socket, &buf, NN_MSG, 0)) < 0) {
+        printf("receive error: %s\n", nn_strerror(errno));
+        return -1;
+    }
+
+    std::stringstream sstream;
+    sstream.str(buf);
+    sstream >> obj;
+    nn_freemsg(buf);
+    return read;
+}
+
+template<>
+long receive(const MDL::Paillier::PubKey &pk, int socket) {
+}
+
+template <class T>
+long send(const T &obj, int socket) {
+    std::stringstream sstream;
+    sstream << obj;
+    auto str = sstream.str();
+    long sent;
+    if ((sent = nn_send(socket, str.c_str(), str.size(), 0)) < 0) {
+        printf("send pk error %s\n", nn_strerror(errno));
+        return -1;
+        return false;
+    }
+    return sent;
+}
+
 }
 };
