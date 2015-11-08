@@ -143,15 +143,18 @@ public:
         if (slot_nr == 1) return;
 
         primes.reserve(slot_nr);
-        long bits_each = std::lround(1.0 * NTL::NumBits(n) / slot_nr);
+        long target_bits_len = NTL::NumBits(n) >> 1;
+        long bits_each = std::lround(target_bits_len / slot_nr);
         assert(bits_each >= 2);
         for (long i = 0; i < slot_nr; i++) {
             long trial = 0;
+            auto bits_to_gen = std::min(target_bits_len, bits_each);
             while (trial++ < 30) {
-                long prime = NTL::RandomPrime_long(bits_each);
+                long prime = NTL::RandomPrime_long(bits_to_gen);
                 if (std::find(primes.begin(), primes.end(),
                               prime) == primes.end()) {
                     primes.push_back(prime);
+                    target_bits_len -= NTL::NumBits(prime);
                     break;
                 }
             }
@@ -307,6 +310,7 @@ public:
         }
     }
 
+    const PubKey &GetPk() const { return pk; }
 private:
     NTL::ZZ l, il;
     const PubKey pk;
@@ -338,6 +342,10 @@ void SecKey::Decrypt(NTL::ZZ &r, const Ctxt &ctxt) const {
 
 void SecKey::Unpack(std::vector<long> &slots, const Ctxt &ctxt) const {
     imp->Unpack(slots, ctxt);
+}
+
+const PubKey& SecKey::GetPk() const {
+    return imp->GetPk();
 }
 
 std::pair<SecKey, PubKey> GenKey(long bits, long slot_nr) {

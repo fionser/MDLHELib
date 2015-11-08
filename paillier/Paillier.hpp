@@ -39,6 +39,7 @@ public:
     void Decrypt(NTL::ZZ &plain, const Ctxt &ctxt) const;
     void Decrypt(long &plain, const Ctxt &ctxt) const;
     void Unpack(std::vector<long> &slots, const Ctxt &ctxt) const;
+    const PubKey &GetPk() const;
 private:
     class SecKeyImp; // implementation
     std::shared_ptr<SecKeyImp> imp = nullptr;
