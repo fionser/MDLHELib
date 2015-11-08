@@ -20,14 +20,17 @@ std::vector<MDL::Paillier::Ctxt> encrypt(const MDL::Matrix<long> &data,
     return ctxts;
 }
 
+MDL::Paillier::Ctxt& add(MDL::Paillier::Ctxt &a, const MDL::Paillier::Ctxt &b) {
+	a += b;
+	return a;
+}
+
 MDL::Paillier::Ctxt mean(const std::vector<MDL::Paillier::Ctxt> &ctxts) {
 	MDL::Paillier::Ctxt sum(ctxts.front());
 	auto sze = ctxts.size();
     MDL::Timer timer;
     timer.start();
-	for (long i = 1; i < sze; i++) {
-		sum += ctxts[i];
-	}
+	for (long i = 1; i < sze; i++) sum += ctxts[i];
     timer.end();
     printf("Mean of %zd records cost %f sec\n", sze, timer.second());
 	return sum;
@@ -43,9 +46,14 @@ int main(int argc, char *argv[]) {
 
     auto data = load_csv(file);
 
-    auto keys = MDL::Paillier::GenKey(key_len, 6);
+    auto keys = MDL::Paillier::GenKey(key_len, 8);
     MDL::Paillier::SecKey sk(keys.first);
     MDL::Paillier::PubKey pk(keys.second);
+
+	auto &primes = pk.GetPrimes();
+	for (auto &p : primes)
+		std::cout << NTL::NumBits(p) << " ";
+	std::cout << "\n";
 
     auto ctxts = encrypt(data, pk);
 	auto res = mean(ctxts);

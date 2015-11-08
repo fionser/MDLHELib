@@ -62,12 +62,13 @@ NTL::ZZ Decrypt(LCtxt &c, MDL::Paillier::SecKey &sk) {
 }
 
 int main() {
-    auto keys = MDL::Paillier::GenKey(1024, 32);
+    auto keys = MDL::Paillier::GenKey(1024, 8);
     MDL::Paillier::SecKey sk(keys.first);
     MDL::Paillier::PubKey pk(keys.second);
-    std::vector<long> slots = {1, 2, 3};
+    std::vector<long> slots = {1<<16, 2, 3};
     auto &primes = pk.GetPrimes();
     auto packed = MDL::CRT(slots, primes);
+
     auto multed = packed * packed;
 
     auto pp = packed * packed % pk.GetN();
@@ -77,6 +78,7 @@ int main() {
 
     for (auto &p : primes) {
         std::cout << res % p << " " ;
+		std::cout << NTL::NumBits(p) << "\n";
     }
     std::cout << "\n";
     return 0;
