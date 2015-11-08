@@ -8,6 +8,7 @@ namespace MDL {
 /// @param p. the primes
 /// @return x such that x = a[0] mod p[0]
 ///                     x = a[1] mod p[1] ....
-NTL::ZZ CRT(const std::vector<long> &a, const std::vector<long> &p);
+template <typename T>
+NTL::ZZ CRT(const std::vector<long> &a, const std::vector<T> &p);
 } // namespace MDL
 #endif // algebra//crt.hpp

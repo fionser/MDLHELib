@@ -15,8 +15,9 @@ static NTL::ZZ InvMod(NTL::ZZ a, NTL::ZZ p)
     return  x1;
 }
 
+template<typename T>
 NTL::ZZ CRT(const std::vector<long> &a,
-            const std::vector<long> &primes) {
+            const std::vector<T> &primes) {
     NTL::ZZ product(1), sum(0);
     auto size = a.size();
 

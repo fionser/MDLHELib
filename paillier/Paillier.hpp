@@ -7,6 +7,7 @@ namespace MDL {
 namespace Paillier {
 //forward declaration
 class Ctxt;
+typedef std::vector<NTL::ZZ> PrimeSet;
 
 class PubKey {
 public:
@@ -21,7 +22,7 @@ public:
     const NTL::ZZ& GetN() const;
     const NTL::ZZ& GetG() const;
     const NTL::ZZ& GetN2() const;
-    const std::vector<long>& GetPrimes() const;
+    const PrimeSet& GetPrimes() const;
 private:
     class PubKeyImp;
     std::shared_ptr<PubKeyImp> imp = nullptr;
@@ -38,7 +39,7 @@ public:
     void Encrypt(Ctxt &ctxt, const long plain) const;
     void Decrypt(NTL::ZZ &plain, const Ctxt &ctxt) const;
     void Decrypt(long &plain, const Ctxt &ctxt) const;
-    void Unpack(std::vector<long> &slots, const Ctxt &ctxt) const;
+    void Unpack(std::vector<NTL::ZZ> &slots, const Ctxt &ctxt) const;
     const PubKey &GetPk() const;
 private:
     class SecKeyImp; // implementation

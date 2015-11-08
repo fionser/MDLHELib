@@ -4,6 +4,7 @@
 #include "algorithm"
 namespace MDL {
 namespace Paillier {
+
 class Ctxt::CtxtImp {
 public:
     CtxtImp(const PubKey &pk) : pk(pk) {}
@@ -135,6 +136,7 @@ Ctxt& Ctxt::operator*=(const NTL::ZZ &v) {
 const PubKey& Ctxt::GetPk() const {
     return imp->GetPk();
 }
+
 class PubKey::PubKeyImp {
 public:
     PubKeyImp(const NTL::ZZ &n, const long slot_nr) : n(n), g(n + 1) {
@@ -151,7 +153,7 @@ public:
             long trial = 0;
             auto bits_to_gen = std::min(target_bits_len, bits_each);
             while (trial++ < 30) {
-                long prime = NTL::RandomPrime_long(bits_to_gen);
+                auto prime = NTL::RandomPrime_ZZ(bits_to_gen);
                 if (std::find(primes.begin(), primes.end(), prime) == primes.end()) {
                     primes.push_back(prime);
                     target_bits_len -= NTL::NumBits(prime);
@@ -212,12 +214,12 @@ public:
         return n2;
     }
 
-    const std::vector<long>& GetPrimes() const {
+    const PrimeSet& GetPrimes() const {
         return primes;
     }
 private:
     NTL::ZZ n, g, n2;
-    std::vector<long> primes;
+    PrimeSet primes;
 };
 
 PubKey::PubKey(const NTL::ZZ &n, long slot_nr) {
@@ -256,7 +258,7 @@ const NTL::ZZ& PubKey::GetN2() const {
     return imp->GetN2();
 }
 
-const std::vector<long>& PubKey::GetPrimes() const {
+const PrimeSet& PubKey::GetPrimes() const {
     return imp->GetPrimes();
 }
 
@@ -298,7 +300,7 @@ public:
         NTL::MulMod(plain, plain, il, pk.GetN());
     }
 
-    void Unpack(std::vector<long> &slots, const Ctxt &ctxt) const {
+    void Unpack(std::vector<NTL::ZZ> &slots, const Ctxt &ctxt) const {
         NTL::ZZ plain;
         Decrypt(plain, ctxt);
         const auto &primes = pk.GetPrimes();
@@ -340,7 +342,7 @@ void SecKey::Decrypt(NTL::ZZ &r, const Ctxt &ctxt) const {
     imp->Decrypt(r, ctxt);
 }
 
-void SecKey::Unpack(std::vector<long> &slots, const Ctxt &ctxt) const {
+void SecKey::Unpack(std::vector<NTL::ZZ> &slots, const Ctxt &ctxt) const {
     imp->Unpack(slots, ctxt);
 }
 
