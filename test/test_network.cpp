@@ -5,6 +5,7 @@
 #include "fhe/FHEContext.h"
 #include "fhe/FHE.h"
 #include "network/network.hpp"
+#include <cstring>
 void receive_pk(int socket, FHEPubKey &pk) {
     char *buf;
     int read;
