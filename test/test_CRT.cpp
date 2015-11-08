@@ -29,7 +29,7 @@ FHE setFHE(long m, long p, long r, long L)
 
 int main() {
     std::vector<long> a{2, 30};
-    std::cout << MDL::CRT({5, 8}, {17, 13}) << std::endl;
+    std::cout << MDL::CRT<long, long>({5, 8}, {17, 13}) << std::endl;
     // auto fhe1 = setFHE(1031, 2, 2, 3);
     // auto fhe2 = setFHE(1031, 5, 2, 3);
     // Ctxt c1(*fhe1.pk), c2(*fhe2.pk);

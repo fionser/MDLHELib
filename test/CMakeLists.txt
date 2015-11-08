@@ -37,7 +37,7 @@ target_link_libraries(benchmark_mean_variance algebra utils fhe)
 target_link_libraries(benchmark_percentile protocol utils algebra fhe)
 target_link_libraries(benchmark_LR protocol utils multiprecision algebra fhe)
 target_link_libraries(benchmark_covariance protocol algebra utils fhe)
-target_link_libraries(benchmark_paillier algebra utils paillier fhe)
+target_link_libraries(benchmark_paillier utils paillier algebra fhe)
 
 file(COPY adult_result adult.data covariance.data all_float_data DESTINATION .)
 

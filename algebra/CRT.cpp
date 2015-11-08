@@ -15,9 +15,24 @@ static NTL::ZZ InvMod(NTL::ZZ a, NTL::ZZ p)
     return  x1;
 }
 
-template<typename T>
+template<>
 NTL::ZZ CRT(const std::vector<long> &a,
-            const std::vector<T> &primes) {
+            const std::vector<long> &primes) {
+    NTL::ZZ product(1), sum(0);
+    auto size = a.size();
+
+    for (auto &prime : primes) product *= prime;
+
+    for (size_t i = 0; i < size; i++) {
+        auto p = product / primes[i];
+        sum += (a[i] * MDL::InvMod(p, NTL::to_ZZ(primes[i])) * p);
+    }
+    return sum % product;
+}
+
+template<>
+NTL::ZZ CRT(const std::vector<long> &a,
+            const std::vector<NTL::ZZ> &primes) {
     NTL::ZZ product(1), sum(0);
     auto size = a.size();
 

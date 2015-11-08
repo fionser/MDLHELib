@@ -58,7 +58,7 @@ void MPEncVector::unpack(MDL::Vector<NTL::ZZ> &vec,
         for (long i = 0; i < num; i++)
             values[i] = tmps[i][s];
 
-        vec[s] = MDL::CRT(values, rPrimes);
+        vec[s] = MDL::CRT<long, long>(values, rPrimes);
         if (negate && vec[s] > (plainSpace >> 1)) {
             vec[s] -= plainSpace;
         }
