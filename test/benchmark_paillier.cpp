@@ -19,7 +19,6 @@ std::vector<MDL::Paillier::Ctxt> encrypt(const MDL::Matrix<long> &data,
 #ifdef OMP
 	omp_set_num_threads(sysconf( _SC_NPROCESSORS_ONLN ));
 #endif
-	printf("to enc\n");
 #pragma omp parallel for
     for (long i = 0; i < data.rows(); i++) {
         pk.Pack(ctxts[i], data[i], 64);
@@ -32,32 +31,33 @@ std::vector<MDL::Paillier::Ctxt> encrypt(const MDL::Matrix<long> &data,
 MDL::Paillier::Ctxt mean(const std::vector<MDL::Paillier::Ctxt> &ctxts) {
     using namespace MDL;
     std::vector<Paillier::Ctxt> parts;
-    long i;
-    for (i = 0; i < work_nr && i < ctxts.size(); i++)
+	auto parts_nr = std::min<long>(ctxts.size(), work_nr);
+    for (long i = 0; i < parts_nr; i++)
         parts.push_back(ctxts[i]);
 
-    std::atomic<long> counter(i);
+    std::atomic<size_t> counter(parts.size());
     std::vector<std::thread> workers;
     auto process = [&](long id) {
         while (true) {
             auto next = counter.fetch_add(1);
             if (next >= ctxts.size()) break;
-            parts[i] += ctxts[next];
+            parts[id] += ctxts[next];
         }
     };
 
     MDL::Timer timer;
     timer.start();
-    for (long i = 0; i < work_nr; i++)
+    for (long i = 0; i < parts_nr; i++)
         workers.push_back(std::thread(process, i));
 
     for (auto &&w : workers) w.join();
-    for (long i = 1; i < work_nr; i++)
+    for (long i = 1; i < parts_nr; i++)
         parts[0] += parts[i];
     timer.end();
 
 	auto sze = ctxts.size();
-    printf("Mean of %zd records cost %f sec\n", sze, timer.second());
+    printf("Mean of %zd records cost %f sec\n",
+		   sze, timer.second());
 	return parts[0];
 }
 

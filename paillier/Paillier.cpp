@@ -205,23 +205,7 @@ public:
     }
 
     void Pack(Ctxt &ctxt, long m, int bits) const {
-        std::vector<NTL::ZZ> tmp_primes;
-		long bits_need = bits;
-		NTL::ZZ tmp(1);
-        for (auto &p : primes) {
-			if (bits_need > 0) {
-				tmp *= p;
-				bits_need -= NTL::NumBits(p);
-                if (bits_need <= 0) {
-                    tmp_primes.push_back(tmp);
-                    bits_need = bits;
-                    tmp = NTL::to_ZZ(1);
-                }
-			}
-		}
-        if (bits_need <= 0)
-            tmp_primes.push_back(tmp);
-
+		auto tmp_primes = GetPrimes(bits);
         std::vector<long> mm(tmp_primes.size(), m);
         auto crt = MDL::CRT(mm, tmp_primes);
         Encrypt(ctxt, crt);
