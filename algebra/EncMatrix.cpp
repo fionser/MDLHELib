@@ -42,7 +42,7 @@ void EncMatrix::unpack(Matrix<NTL::ZZX>    & result,
 {
     result.resize(this->size());
     std::vector<std::thread> workers;
-    std::atomic<size_t> counter(0);
+    std::atomic<size_t> counter(0UL);
     for (long wr = 0; wr < WORKER_NR && wr < this->size(); wr++) {
         workers.push_back(std::move(std::thread([this, &result, &counter, &sk, &ea, &negate](){
                                                 size_t r;
@@ -61,7 +61,7 @@ EncVector EncMatrix::dot(const EncVector     & oth,
     std::vector<EncVector> result(this->size(),
                                   oth.getPubKey());
     std::vector<std::thread> workers;
-    std::atomic<size_t> counter(0);
+    std::atomic<size_t> counter(0UL);
     for (int wr = 0; wr < WORKER_NR; wr++) {
         workers.push_back(std::move(std::thread([this, &result,
                                                  &counter, &oth, &ea]()
@@ -90,7 +90,7 @@ EncVector EncMatrix::column_dot(const EncVector     & oth,
                                 long                  col_to_process) const
 {
     std::vector<EncVector>   parts(this->size(), this->at(0).getPubKey());
-    std::atomic<size_t>      counter(0);
+    std::atomic<size_t>      counter(0UL);
     std::vector<std::thread> workers;
     col_to_process = col_to_process == 0 ? ea.size() : col_to_process;
 
@@ -161,7 +161,7 @@ EncMatrix& EncMatrix::dot(const EncMatrix &oth,
     assert(rows_nr == oth.size());
     assert(col_to_process <= ea.size());
     std::vector<std::thread> workers;
-    std::atomic<long> counter(0);
+    std::atomic<long> counter(0L);
     for (long wr = 0; wr < WORKER_NR; wr++) {
         workers.push_back(std::move(std::thread([this, &ea, &col_to_process,
                                                 &rows_nr, &oth, &counter]() {

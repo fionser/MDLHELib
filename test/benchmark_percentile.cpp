@@ -80,19 +80,20 @@ std::pair<MDL::EncVector, long>load_file(const EncryptedArray& ea,
     return { sum_ctxts(ctxts), data.rows() };
 }
 
-std::vector<MDL::GTResult>k_percentile(const MDL::EncVector& ctxt,
-                                       const FHEPubKey     & pk,
-                                       const EncryptedArray& ea,
-                                       long                  records_nr,
-                                       long                  domain,
-                                       long                  k)
+std::vector<MDL::GTResult<void>>
+k_percentile(const MDL::EncVector& ctxt,
+             const FHEPubKey     & pk,
+             const EncryptedArray& ea,
+             long                  records_nr,
+             long                  domain,
+             long                  k)
 {
     MDL::Timer timer;
     MDL::EncVector oth(pk);
     long kpercentile =  k * records_nr / 100;
     MDL::Vector<long> percentile(ea.size(), kpercentile);
     long plainSpace  = ea.getContext().alMod.getPPowR();
-    std::vector<MDL::GTResult> gtresults(domain);
+    std::vector<MDL::GTResult<void>> gtresults(domain);
     std::atomic<size_t> counter(0);
     std::vector<std::thread> workers;
 
@@ -107,7 +108,7 @@ std::vector<MDL::GTResult>k_percentile(const MDL::EncVector& ctxt,
             while ((d = counter.fetch_add(1)) < domain) {
                 auto tmp(ctxt);
                 replicate(ea, tmp, d);
-                MDL::GTInput input = { oth, tmp, records_nr, plainSpace };
+                MDL::GTInput<void> input = { oth, tmp, records_nr, plainSpace };
                 gtresults[d] = MDL::GT(input, ea);
             }
         }));
@@ -120,7 +121,7 @@ std::vector<MDL::GTResult>k_percentile(const MDL::EncVector& ctxt,
     return gtresults;
 }
 
-void decrypt(const std::vector<MDL::GTResult>& gtresults,
+void decrypt(const std::vector<MDL::GTResult<void>>& gtresults,
              const FHESecKey& sk,
              const EncryptedArray& ea, long kpercent)
 {

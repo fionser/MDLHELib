@@ -5,6 +5,7 @@
 #include <vector>
 namespace MDL {
 namespace Paillier {
+struct Encryption {};
 //forward declaration
 class Ctxt;
 typedef std::vector<NTL::ZZ> PrimeSet;
@@ -19,10 +20,14 @@ public:
     void Encrypt(Ctxt &ctxt, const NTL::ZZ &plain) const;
     void Encrypt(Ctxt &ctxt, const long plain) const;
     void Pack(Ctxt &ctxt, const std::vector<long> &slots, int bits) const;
+    void Pack(Ctxt &ctxt, long m, int bits) const;
     const NTL::ZZ& GetN() const;
     const NTL::ZZ& GetG() const;
     const NTL::ZZ& GetN2() const;
     const PrimeSet& GetPrimes() const;
+    PrimeSet GetPrimes(long bits) const;
+    long bits_per_prime() const;
+    long bits_all_prime() const;
 private:
     class PubKeyImp;
     std::shared_ptr<PubKeyImp> imp = nullptr;
@@ -59,6 +64,7 @@ public:
     Ctxt& operator-=(const NTL::ZZ &v);
     Ctxt& operator*=(long v);
     Ctxt& operator*=(const NTL::ZZ &v);
+    Ctxt& negate();
     ~Ctxt() {}
     void SetCtxt(const NTL::ZZ &number);
     void SetCtxt(const long number);

@@ -62,24 +62,28 @@ NTL::ZZ Decrypt(LCtxt &c, MDL::Paillier::SecKey &sk) {
 }
 
 int main() {
+    NTL::SetSeed(NTL::to_ZZ(1000));
     auto keys = MDL::Paillier::GenKey(1024);
     MDL::Paillier::SecKey sk(keys.first);
     MDL::Paillier::PubKey pk(keys.second);
-    std::vector<long> slots = {1<<16, 2, 3};
-    auto &primes = pk.GetPrimes();
-    auto packed = MDL::CRT(slots, primes);
-
-    auto multed = packed * packed;
-
-    auto pp = packed * packed % pk.GetN();
-    auto lctxt = Encrypt(packed, pk);
-    auto mult = Mult(lctxt, lctxt, pk);
-    auto res = Decrypt(mult, sk);
-
-    for (auto &p : primes) {
-        std::cout << res % p << " " ;
-		std::cout << NTL::NumBits(p) << "\n";
-    }
-    std::cout << "\n";
+    std::vector<long> slots = {1, 2, 3};
+    MDL::Paillier::Ctxt c(pk), c2(pk);
+    pk.Pack(c, slots, 16);
+    std::vector<NTL::ZZ> plt;
+    sk.Unpack(plt, c, 16);
+    for (auto &pp : plt)
+        std::cout << pp << " ";
+//    auto multed = packed * packed;
+//
+//    auto pp = packed * packed % pk.GetN();
+//    auto lctxt = Encrypt(packed, pk);
+//    auto mult = Mult(lctxt, lctxt, pk);
+//    auto res = Decrypt(mult, sk);
+//
+//    for (auto &p : primes) {
+//        std::cout << res % p << " " ;
+//		std::cout << NTL::NumBits(p) << "\n";
+//    }
+//    std::cout << "\n";
     return 0;
 }

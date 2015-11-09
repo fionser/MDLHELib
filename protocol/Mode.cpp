@@ -20,7 +20,7 @@ public:
         m_results.resize(size * (size - 1) / 2);
     }
 
-    std::pair<GTResult, bool> get(long i, long j) const {
+    std::pair<GTResult<void>, bool> get(long i, long j) const {
         if (i >= j || j >= m_matrixSize || j < 0) return {{}, false};
         auto index = (m_matrixSize * i - ((i + 1) * i >> 1)) + j - i - 1;
         if (index >= m_results.size()) {
@@ -32,7 +32,7 @@ public:
 
     size_t matrixSize() const { return m_matrixSize; }
     /// make sures i < j
-    void put(const GTResult &result, long i, long j) {
+    void put(const GTResult<void> &result, long i, long j) {
         if (i >= j || j >= m_matrixSize || j < 0) return;
         auto index = (m_matrixSize * i - ((i + 1) * i >> 1)) + j - i - 1;
         if (index >= m_results.size()) {
@@ -43,7 +43,7 @@ public:
     }
 private:
     const size_t m_matrixSize;
-    std::vector<GTResult> m_results;
+    std::vector<GTResult<void>> m_results;
 };
 } // namespace Mode
 
@@ -64,7 +64,7 @@ Mode::Result::ptr computeMode(const Mode::Input &input,
                 for (long j = i + 1; j < input.slotToProcess; j++) {
                     auto Y(input.slots);
                     replicate(ea, Y, j);
-                    GTInput gt{X, Y, input.valueDomain, plainSpace};
+                    GTInput<void> gt{X, Y, input.valueDomain, plainSpace};
                     results->put(GT(gt, ea), i, j);
                 }
             } }));

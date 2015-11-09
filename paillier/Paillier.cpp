@@ -29,6 +29,11 @@ public:
         return pk;
     }
 
+    CtxtImp& negate() {
+        NTL::InvMod(value, value, pk.GetN2());
+        return *this;
+    }
+
     CtxtImp& operator+=(const CtxtImp &oth) {
         assert(pk == oth.pk);
         NTL::MulMod(value, value, oth.value, pk.GetN2());
@@ -62,11 +67,16 @@ public:
     }
 
     CtxtImp& operator*=(long v) {
-        NTL::PowerMod(value, value, v, pk.GetN2());
-        return *this;
+        return operator*=(NTL::to_ZZ(v));
     }
+
     CtxtImp& operator*=(const NTL::ZZ &v) {
-        NTL::PowerMod(value, value, v, pk.GetN2());
+        auto vv(v);
+        if (vv < 0) {
+            NTL::InvMod(value, value, pk.GetN2());
+            vv *= -1;
+        }
+        NTL::PowerMod(value, value, vv, pk.GetN2());
         return *this;
     }
 private:
@@ -92,6 +102,11 @@ void Ctxt::SetCtxt(const NTL::ZZ &number) {
 
 void Ctxt::SetCtxt(const long number) {
     imp->SetCtxt(number);
+}
+
+Ctxt& Ctxt::negate() {
+    imp->negate();
+    return *this;
 }
 
 Ctxt& Ctxt::operator+=(const Ctxt &oth) {
@@ -155,6 +170,7 @@ public:
                     break;
                 }
             }
+            if (trial >= 30) bits_each <<= 1;
         }
     }
 
@@ -189,22 +205,32 @@ public:
         ctxt.SetCtxt(res);
     }
 
-    void Pack(Ctxt &ctxt, const std::vector<long> &slots, int bits) const {
-        assert(!primes.empty());
-		std::vector<NTL::ZZ> tmp_primes;
+    void Pack(Ctxt &ctxt, long m, int bits) const {
+        std::vector<NTL::ZZ> tmp_primes;
 		long bits_need = bits;
 		NTL::ZZ tmp(1);
-		for (auto &p : primes) {
+        for (auto &p : primes) {
 			if (bits_need > 0) {
 				tmp *= p;
 				bits_need -= NTL::NumBits(p);
-			} else {
-				tmp_primes.push_back(tmp);
-				tmp = NTL::to_ZZ(1);
-				bits_need = bits;
+                if (bits_need <= 0) {
+                    tmp_primes.push_back(tmp);
+                    bits_need = bits;
+                    tmp = NTL::to_ZZ(1);
+                }
 			}
 		}
+        if (bits_need <= 0)
+            tmp_primes.push_back(tmp);
 
+        std::vector<long> mm(tmp_primes.size(), m);
+        auto crt = MDL::CRT(mm, tmp_primes);
+        Encrypt(ctxt, crt);
+    }
+
+    void Pack(Ctxt &ctxt, const std::vector<long> &slots, int bits) const {
+        auto tmp_primes = GetPrimes(bits);
+        assert(slots.size() <= tmp_primes.size());
         auto crt = MDL::CRT(slots, tmp_primes);
         Encrypt(ctxt, crt);
     }
@@ -224,6 +250,46 @@ public:
     const PrimeSet& GetPrimes() const {
         return primes;
     }
+
+    PrimeSet GetPrimes(long bits) const {
+        assert(bits > 0);
+        PrimeSet tmp_primes;
+		long bits_need = bits;
+		NTL::ZZ tmp(1);
+
+		for (auto &p : primes) {
+			if (bits_need > 0) {
+				tmp *= p;
+				bits_need -= NTL::NumBits(p);
+                if (bits_need <= 0) {
+                    tmp_primes.push_back(tmp);
+                    bits_need = bits;
+                    tmp = NTL::to_ZZ(1);
+                }
+			}
+		}
+
+        if (bits_need <= 0)
+            tmp_primes.push_back(tmp);
+        return tmp_primes;
+    }
+
+    long bits_per_prime() const {
+        if (primes.empty())
+            return 0;
+        long bits = NTL::NumBits(primes.front());
+        for (auto &p : primes)
+            bits = std::min(bits, NTL::NumBits(p));
+        return bits;
+    }
+
+    long bits_all_prime() const {
+        long b = 0;
+        for (auto &p : primes)
+            b += NTL::NumBits(p);
+        return b;
+    }
+
 private:
     NTL::ZZ n, g, n2;
     PrimeSet primes;
@@ -236,7 +302,6 @@ PubKey::PubKey(const NTL::ZZ &n) {
 PubKey::PubKey(const PubKey &oth) {
     imp = std::make_shared<PubKeyImp>(*oth.imp);
 }
-
 bool PubKey::operator==(const PubKey &oth) const {
     return *imp == *oth.imp;
 }
@@ -253,6 +318,10 @@ void PubKey::Pack(Ctxt &ctxt, const std::vector<long> &slots, int bits) const {
     imp->Pack(ctxt, slots, bits);
 }
 
+void PubKey::Pack(Ctxt &ctxt, long m, int bits) const {
+    imp->Pack(ctxt, m, bits);
+}
+
 const NTL::ZZ& PubKey::GetN() const {
     return imp->GetN();
 }
@@ -267,6 +336,18 @@ const NTL::ZZ& PubKey::GetN2() const {
 
 const PrimeSet& PubKey::GetPrimes() const {
     return imp->GetPrimes();
+}
+
+PrimeSet PubKey::GetPrimes(long bits) const {
+    return imp->GetPrimes(bits);
+}
+
+long PubKey::bits_per_prime() const {
+   return imp->bits_per_prime();
+}
+
+long PubKey::bits_all_prime() const {
+    return imp->bits_all_prime();
 }
 
 class SecKey::SecKeyImp {
@@ -299,6 +380,7 @@ public:
         pk.Pack(ctxt, slots, bits);
     }
 
+
     void Decrypt(NTL::ZZ &plain, const Ctxt &ctxt) const {
         assert(pk == ctxt.GetPk());
         NTL::PowerMod(plain, ctxt.GetValue(), l, pk.GetN2());
@@ -307,29 +389,25 @@ public:
         NTL::MulMod(plain, plain, il, pk.GetN());
     }
 
+    void Decrypt(long &plain, const Ctxt &ctxt) const {
+        NTL::ZZ tmp;
+        Decrypt(tmp, ctxt);
+        plain = NTL::to_long(tmp);
+    }
+
     void Unpack(std::vector<NTL::ZZ> &slots, const Ctxt &ctxt, int bits) const {
+        auto tmp_primes = pk.GetPrimes(bits);
+
         NTL::ZZ plain;
         Decrypt(plain, ctxt);
-        const auto &primes = pk.GetPrimes();
-        assert(!primes.empty());
-        slots.resize(0);
-		std::vector<NTL::ZZ> tmp_primes;
-		long bits_need = bits;
-		NTL::ZZ tmp(1);
-		for (auto &p : primes) {
-			if (bits_need > 0) {
-				tmp *= p;
-				bits_need -= NTL::NumBits(p);
-			} else {
-				tmp_primes.push_back(tmp);
-				tmp = NTL::to_ZZ(1);
-				bits_need = bits;
-			}
-		}
-
-        slots.reserve(tmp_primes.size());
-        for (auto prime : tmp_primes) {
-            slots.push_back(plain % prime);
+        if ((plain << 1) >= pk.GetN())
+            plain -= pk.GetN();
+        slots.resize(tmp_primes.size());
+        for (size_t i = 0; i < tmp_primes.size(); i++) {
+            auto residue = plain % tmp_primes[i];
+            if ((residue << 1) >= tmp_primes[i])
+                residue -= tmp_primes[i];
+            slots[i] = residue;
         }
     }
 
@@ -360,6 +438,10 @@ void SecKey::Encrypt(Ctxt &ctxt, const long plain) const {
 }
 
 void SecKey::Decrypt(NTL::ZZ &r, const Ctxt &ctxt) const {
+    imp->Decrypt(r, ctxt);
+}
+
+void SecKey::Decrypt(long &r, const Ctxt &ctxt) const {
     imp->Decrypt(r, ctxt);
 }
 

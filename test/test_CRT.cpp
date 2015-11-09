@@ -29,7 +29,9 @@ FHE setFHE(long m, long p, long r, long L)
 
 int main() {
     std::vector<long> a{2, 30};
-    std::cout << MDL::CRT<long, long>({5, 8}, {17, 13}) << std::endl;
+    std::vector<long> primes = {286238516299,380837045087,451652397359,438352100089,521930767949,407568125513,249530955953,312860439569,324960812177,280910000593};
+    std::cout << MDL::CRT<long, long>({5, 8}, primes) << std::endl;
+
     // auto fhe1 = setFHE(1031, 2, 2, 3);
     // auto fhe2 = setFHE(1031, 5, 2, 3);
     // Ctxt c1(*fhe1.pk), c2(*fhe2.pk);

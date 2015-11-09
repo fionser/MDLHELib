@@ -13,6 +13,7 @@ struct Input {
     long slotToProcess;
     long valueDomain;
 };
+
 /// helper class to retrieval result of mode.
 class Result {
 public:
@@ -20,7 +21,7 @@ public:
     Result() {}
     /// make sure i < j.
     /// @return the comparison result of the i-th and the j-th slot.
-    virtual std::pair<GTResult, bool> get(long i, long j) const = 0;
+    virtual std::pair<GTResult<void>, bool> get(long i, long j) const = 0;
     virtual size_t matrixSize() const = 0;
 };
 } // namespace Mode

@@ -10,7 +10,9 @@ std::vector<MDL::Paillier::Ctxt> encrypt(const MDL::Matrix<long> &data,
     timer.start();
     MDL::Paillier::Ctxt c(pk);
     std::vector<MDL::Paillier::Ctxt> ctxts(data.rows(), c);
+#ifdef OMP
 	omp_set_num_threads(sysconf( _SC_NPROCESSORS_ONLN ));
+#endif
 	printf("to enc\n");
 #pragma omp parallel for
     for (long i = 0; i < data.rows(); i++) {
