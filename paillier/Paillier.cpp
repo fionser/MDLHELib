@@ -155,11 +155,10 @@ const PubKey& Ctxt::GetPk() const {
 class PubKey::PubKeyImp {
 public:
     PubKeyImp(const NTL::ZZ &n) : n(n), g(n + 1) {
-        n2 = n * n;
         assert(n > 0);
+        n2 = n * n;
         long target_bits_len = NTL::NumBits(n) >> 1;
-        long bits_each = 10;
-        assert(bits_each >= 2);
+        long bits_each = 16;
 		while (target_bits_len >= bits_each) {
             long trial = 0;
             while (trial++ < 30) {
