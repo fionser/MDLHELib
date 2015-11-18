@@ -67,8 +67,6 @@ void receive_ctxt(int socket, const FHEPubKey &pk,
     std::stringstream sstream;
     MDL::Timer timer;
     char *buf;
-    // nn_recv(socket, &buf, NN_MSG, 0);
-    // nn_send(socket, NULL, 0, 0);
     MDL::net::msg_header *hdr = (MDL::net::msg_header *)buf;
 
     std::vector<size_t> lens(hdr->msg_ele_sze,
@@ -77,6 +75,7 @@ void receive_ctxt(int socket, const FHEPubKey &pk,
     struct nn_msghdr nn_hdr;
     MDL::net::make_nn_header(&nn_hdr, lens);
     nn_recvmsg(socket, &nn_hdr, 0);
+    nn_send(socket, NULL, 0, 0);
     printf("received\n");
     Ctxt c(pk);
     for (size_t i = 0; i < nn_hdr.msg_iovlen; i++) {
