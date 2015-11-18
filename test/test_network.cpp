@@ -37,7 +37,6 @@ void send_ctxts(int socket, const std::vector<Ctxt> &ctxts) {
     std::stringstream sstream;
     MDL::Timer timer;
 
-    timer.start();
     for (auto &ctxt : ctxts) {
         sstream.str("");
         sstream << ctxt;
@@ -56,9 +55,10 @@ void send_ctxts(int socket, const std::vector<Ctxt> &ctxts) {
 
     struct nn_msghdr nn_hdr;
     MDL::net::make_nn_header(&nn_hdr, data, lens);
+    timer.start();
     nn_sendmsg(socket, &nn_hdr, 0);
     timer.end();
-    printf("set %zd ctxt %f s\n", ctxts.size(), timer.second());
+    printf("sent %zd ctxt %f s\n", ctxts.size(), timer.second());
     MDL::net::free_header(&nn_hdr, true);
 }
 
@@ -77,7 +77,7 @@ void receive_ctxt(int socket, const FHEPubKey &pk,
     struct nn_msghdr nn_hdr;
     MDL::net::make_nn_header(&nn_hdr, lens);
     nn_recvmsg(socket, &nn_hdr, 0);
-
+    printf("received\n");
     Ctxt c(pk);
     for (size_t i = 0; i < nn_hdr.msg_iovlen; i++) {
         sstream.str((char *)nn_hdr.msg_iov[i].iov_base);
