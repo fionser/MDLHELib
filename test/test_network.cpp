@@ -58,7 +58,8 @@ void send_ctxts(int socket, const std::vector<Ctxt> &ctxts) {
     timer.start();
     nn_sendmsg(socket, &nn_hdr, 0); // send data
     timer.end();
-    printf("sent %zd ctxt %f s\n", data.size(), timer.second());
+    printf("sent %zd ctxt %f s\n", ctxts.size(), timer.second());
+    nn_recv(socket, NULL, 0, 0);
     MDL::net::free_header(&nn_hdr, true);
 }
 
