@@ -2,6 +2,7 @@
 #include <nanomsg/reqrep.h>
 #include <iostream>
 #include <strstream>
+#include <cstring>
 #include "fhe/FHEContext.h"
 #include "fhe/FHE.h"
 #include "network/network.hpp"
@@ -88,14 +89,16 @@ void receive_ctxt(int socket, const FHEPubKey &pk,
 }
 
 long gM, gP, gR, gL;
+long gC = 1;
 void act_server(int socket) {
     FHEcontext context(gM, gP, gR);
     buildModChain(context, gL);
     FHEPubKey pk(context);
     receive_pk(socket, pk);
 
-    std::vector<Ctxt> ctxts(1, pk);
-    pk.Encrypt(ctxts[0], NTL::to_ZZX(3));
+    std::vector<Ctxt> ctxts(gC, pk);
+    for (long i = 0; i < gC; i++)
+        pk.Encrypt(ctxts[i], NTL::to_ZZX(i));
     send_ctxts(socket, ctxts);
     nn_close(socket);
 }
@@ -123,6 +126,7 @@ int main(int argc, char *argv[]) {
     mapping.arg("L", gL, "L");
     mapping.arg("R", role, "role, 0:server, 1:client");
     mapping.arg("H", host, "host");
+    mapping.arg("C", gC, "cipher to send");
     mapping.parse(argc, argv);
 
     if (role == 0) {
