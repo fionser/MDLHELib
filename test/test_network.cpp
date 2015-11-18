@@ -50,15 +50,15 @@ void send_ctxts(int socket, const std::vector<Ctxt> &ctxts) {
 
     MDL::net::msg_header *hdr;
     MDL::net::make_header(&hdr, lens);
-    nn_send(socket, hdr, MDL::net::header_size(hdr), 0);
-    nn_recv(socket, NULL, 0, 0);
+    nn_send(socket, hdr, MDL::net::header_size(hdr), 0); // send lens
+    nn_recv(socket, NULL, 0, 0); // recv ok
 
     struct nn_msghdr nn_hdr;
     MDL::net::make_nn_header(&nn_hdr, data, lens);
     timer.start();
-    nn_sendmsg(socket, &nn_hdr, 0);
+    nn_sendmsg(socket, &nn_hdr, 0); // send data
     timer.end();
-    printf("sent %zd ctxt %f s\n", ctxts.size(), timer.second());
+    printf("sent %zd ctxt %f s\n", data.size(), timer.second());
     MDL::net::free_header(&nn_hdr, true);
 }
 
@@ -67,17 +67,19 @@ void receive_ctxt(int socket, const FHEPubKey &pk,
     std::stringstream sstream;
     MDL::Timer timer;
     char *buf;
-    nn_recv(socket, &buf, NN_MSG, 0);
-    nn_send(socket, NULL, 0, 0);
+    nn_recv(socket, &buf, NN_MSG, 0); // recv lens
+    nn_send(socket, NULL, 0, 0); // send ok
     MDL::net::msg_header *hdr = (MDL::net::msg_header *)buf;
 
     std::vector<size_t> lens(hdr->msg_ele_sze,
                              hdr->msg_ele_sze + hdr->msg_ele_nr);
+    printf("vec size %zd\n", lens.size());
     timer.start();
     struct nn_msghdr nn_hdr;
     MDL::net::make_nn_header(&nn_hdr, lens);
-    nn_recvmsg(socket, &nn_hdr, 0);
-    printf("received %zd\n", lens.size());
+    printf("%zd\n", nn_hdr.msg_iovlen);
+    nn_recvmsg(socket, &nn_hdr, 0); // recv data
+
     Ctxt c(pk);
     for (size_t i = 0; i < nn_hdr.msg_iovlen; i++) {
         sstream.str((char *)nn_hdr.msg_iov[i].iov_base);
@@ -85,6 +87,8 @@ void receive_ctxt(int socket, const FHEPubKey &pk,
         ctxts.push_back(c);
     }
     timer.end();
+    nn_freemsg(buf);
+    nn_send(socket, NULL, 0, 0);
     printf("receive %zd ciphers %fs\n", ctxts.size(), timer.second());
 }
 
