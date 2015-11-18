@@ -2,6 +2,7 @@
 #include <nanomsg/reqrep.h>
 #include <unistd.h>
 #include <string>
+#include <stdio.h>
 #include "utils/timer.hpp"
 #include "network/network.hpp"
 void make_package(size_t sze, std::vector<size_t> &lens) {
@@ -12,6 +13,14 @@ void make_package(size_t sze, std::vector<size_t> &lens) {
 	}
 	if (sze > 0)
 		lens.push_back(sze);
+}
+
+size_t check(struct nn_msghdr *nn_hdr, size_t sze) {
+	size_t count = 0;
+	for (size_t i = 0; i < nn_hdr->msg_iovlen; i++) {
+		count += nn_hdr->msg_iov[i].iov_len;
+	}
+	return count;
 }
 
 void act_client(std::string &addr, size_t sze) {
@@ -29,19 +38,16 @@ void act_client(std::string &addr, size_t sze) {
 	for (auto len : lens)
 		data.push_back((void *)new char[len]);
 	
-	struct nn_msghdr nn_hdr;
-	MDL::net::make_nn_header(&nn_hdr, data, lens);
 	MDL::Timer timer;
 	nn_send(sock, NULL, 0, 0);
 	nn_recv(sock, NULL, 0, 0);
-	printf("going to send %zd!\n", lens.size());
+
 	timer.start();
-	nn_sendmsg(sock, &nn_hdr, 0);
-	nn_recv(sock, NULL, 0, 0);
+	MDL::net::send_all(sock, data, lens);
 	timer.end();
 	printf("send %f\n", timer.second());
 	nn_close(sock);
-	MDL::net::free_header(&nn_hdr, false);
+
 	for (auto p : data) {
 		char *pp = (char *)p;
 		delete []pp;
@@ -55,33 +61,33 @@ void act_server(size_t sze) {
             printf("Error: %s\n", nn_strerror(errno));
             return;
 	}
+
 	nn_recv(sock, NULL, 0, 0);
 	nn_send(sock, NULL, 0, 0);
+
 	std::vector<size_t> lens;
 	make_package(sze, lens);
-	struct nn_msghdr nn_hdr;
+
 	MDL::Timer timer;
 	timer.start();
-	MDL::net::make_nn_header(&nn_hdr, lens);
-	nn_recvmsg(sock, &nn_hdr, 0);
+	MDL::net::receive_all(sock, lens);
 	timer.end();
-	nn_send(sock, NULL, 0, 0);
-	MDL::net::free_header(&nn_hdr, true);
+
 	printf("receive %f\n", timer.second());
 	nn_close(sock);
 }
 
 int main(int argc, char *argv[]) {
-	int oc;
+	int oc, role;
 	std::string addr;
-	int role, sze;
+	size_t sze;
 	while((oc = getopt(argc, argv, "r:a:c:")) != -1) {
 			switch (oc) {
 			case 'a':
 			addr = std::string(optarg);
 			break;
 			case 'c':
-			sze = std::atoi(optarg);
+			sze = std::strtol(optarg, NULL, 10);
 			break;
 			case 'r':
 			role = std::atoi(optarg);
