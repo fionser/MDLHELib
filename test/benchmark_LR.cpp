@@ -10,10 +10,13 @@ const long WORKER_NR = 8;
 #else
 const long WORKER_NR = 1;
 #endif
-
+std::string gfile;
+long gD;
+long gMU;
 MDL::Vector<double> getTrueW(const MDL::Matrix<long> &XtX,
                              const MDL::Vector<long> &XtY)
 {
+	printf("INFO X'X %zd %zd\n", XtX.rows(), XtX.cols());
     auto inv = XtX.inverse();
     return inv.dot(XtY.reduce(1.0));
 }
@@ -26,9 +29,9 @@ void benchmarkLR(const MPContext &context,
     MPEncMatrix XtX;
     MPEncVector XtY(pk), MU(pk);
     MDL::Timer evalTimer, decTimer;
-    auto _raw = load_csv("LR_1000");
-    auto _XtX = _raw.submatrix(0, -1, 0, 4);
-    auto _XtY = _raw.submatrix(0, -1, 5, 5).vector();
+    auto _raw = load_csv(gfile);
+    auto _XtX = _raw.submatrix(0, -1, 0, gD - 2);
+    auto _XtY = _raw.submatrix(0, -1, gD - 1, gD - 1).vector();
     MDL::Vector<long> _MU(_XtY.dimension());
 
 
@@ -42,7 +45,7 @@ void benchmarkLR(const MPContext &context,
 	    /* pair.first.unpack(v1, sk, ea); */
 	    /* pair.second.unpack(v2, sk, ea); */
 		/* auto mu = long(v1.L2() / v2.L2()); */
-	    long mu = 39181609071;
+	    long mu = gMU;
 		for (long i = 0; i < _MU.dimension(); i++) _MU[i] = mu;
     	MU.pack(_MU, ea);
 		std::cout << "MU " << mu << std::endl;
@@ -50,7 +53,7 @@ void benchmarkLR(const MPContext &context,
 
 	MDL::Timer lrEvalTimer;
 	lrEvalTimer.start();
-    MDL::MPMatInverseParam param = {pk, ea, 5};
+    MDL::MPMatInverseParam param = {pk, ea, gD - 1};
     auto inv = MDL::inverse(XtX, MU, param);
 
     auto W = inv.sDot(XtY, pk, ea);
@@ -79,8 +82,12 @@ int main(int argc, char *argv[]) {
     argmap.arg("p", p, "p");
     argmap.arg("r", r, "r");
     argmap.arg("P", P, "P");
+    argmap.arg("f", gfile, "file");
+    argmap.arg("u", gMU, "mu");
+	argmap.arg("D", gD, "dimension");
     argmap.parse(argc, argv);
-
+	printf("m = %ld p = %ld r = %ld P = %ld L = %ld file = %s D = %ld Mu = %ld\n",
+		   m, p, r, P, L, gfile.c_str(), gD, gMU);
     MDL::Timer keyTimer;
     keyTimer.start();
     MPContext context(m, p, r, P);
@@ -89,8 +96,7 @@ int main(int argc, char *argv[]) {
     MPPubKey pk(sk);
     MPEncArray ea(context);
     keyTimer.end();
-    std::cout << "slots " << ea.slots() <<
-        " plainText: " << context.precision() << std::endl;
+    std::cout << "slots " << ea.slots() << " plainText: " << context.precision() << std::endl;
     benchmarkLR(context, sk, pk, ea);
     return 0;
 }

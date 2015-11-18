@@ -155,11 +155,10 @@ const PubKey& Ctxt::GetPk() const {
 class PubKey::PubKeyImp {
 public:
     PubKeyImp(const NTL::ZZ &n) : n(n), g(n + 1) {
-        n2 = n * n;
         assert(n > 0);
+        n2 = n * n;
         long target_bits_len = NTL::NumBits(n) >> 1;
-        long bits_each = 10;
-        assert(bits_each >= 2);
+        long bits_each = 16;
 		while (target_bits_len >= bits_each) {
             long trial = 0;
             while (trial++ < 30) {
@@ -206,23 +205,7 @@ public:
     }
 
     void Pack(Ctxt &ctxt, long m, int bits) const {
-        std::vector<NTL::ZZ> tmp_primes;
-		long bits_need = bits;
-		NTL::ZZ tmp(1);
-        for (auto &p : primes) {
-			if (bits_need > 0) {
-				tmp *= p;
-				bits_need -= NTL::NumBits(p);
-                if (bits_need <= 0) {
-                    tmp_primes.push_back(tmp);
-                    bits_need = bits;
-                    tmp = NTL::to_ZZ(1);
-                }
-			}
-		}
-        if (bits_need <= 0)
-            tmp_primes.push_back(tmp);
-
+		auto tmp_primes = GetPrimes(bits);
         std::vector<long> mm(tmp_primes.size(), m);
         auto crt = MDL::CRT(mm, tmp_primes);
         Encrypt(ctxt, crt);

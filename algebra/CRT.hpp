@@ -10,5 +10,8 @@ namespace MDL {
 ///                     x = a[1] mod p[1] ....
 template <typename T, typename R>
 NTL::ZZ CRT(const std::vector<T> &a, const std::vector<R> &p);
+
+template <>
+NTL::ZZ CRT(const std::vector<long> &a, const std::vector<NTL::ZZ> &p);
 } // namespace MDL
 #endif // algebra//crt.hpp
