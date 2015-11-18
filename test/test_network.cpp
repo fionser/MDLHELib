@@ -5,7 +5,8 @@
 #include "fhe/FHEContext.h"
 #include "fhe/FHE.h"
 #include "network/network.hpp"
-#include <cstring>
+#include "utils/timer.hpp"
+
 void receive_pk(int socket, FHEPubKey &pk) {
     char *buf;
     int read;
@@ -33,7 +34,9 @@ void send_ctxts(int socket, const std::vector<Ctxt> &ctxts) {
     std::vector<void *> data;
     std::vector<size_t> lens;
     std::stringstream sstream;
+    MDL::Timer timer;
 
+    timer.start();
     for (auto &ctxt : ctxts) {
         sstream.str("");
         sstream << ctxt;
@@ -53,12 +56,15 @@ void send_ctxts(int socket, const std::vector<Ctxt> &ctxts) {
     struct nn_msghdr nn_hdr;
     MDL::net::make_nn_header(&nn_hdr, data, lens);
     nn_sendmsg(socket, &nn_hdr, 0);
+    timer.end();
+    printf("set %zd ctxt %f s\n", ctxts.size(), timer.second());
     MDL::net::free_header(&nn_hdr, true);
 }
 
 void receive_ctxt(int socket, const FHEPubKey &pk,
                   std::vector<Ctxt> &ctxts) {
     std::stringstream sstream;
+    MDL::Timer timer;
     char *buf;
     nn_recv(socket, &buf, NN_MSG, 0);
     nn_send(socket, NULL, 0, 0);
@@ -66,6 +72,7 @@ void receive_ctxt(int socket, const FHEPubKey &pk,
 
     std::vector<size_t> lens(hdr->msg_ele_sze,
                              hdr->msg_ele_sze + hdr->msg_ele_nr);
+    timer.start();
     struct nn_msghdr nn_hdr;
     MDL::net::make_nn_header(&nn_hdr, lens);
     nn_recvmsg(socket, &nn_hdr, 0);
@@ -76,50 +83,60 @@ void receive_ctxt(int socket, const FHEPubKey &pk,
         sstream >> c;
         ctxts.push_back(c);
     }
+    timer.end();
+    printf("receive %zd ciphers %fs\n", ctxts.size(), timer.second());
 }
 
+long gM, gP, gR, gL;
 void act_server(int socket) {
-    FHEcontext context(1024, 1031, 1);
-    buildModChain(context, 3);
+    FHEcontext context(gM, gP, gR);
+    buildModChain(context, gL);
     FHEPubKey pk(context);
     receive_pk(socket, pk);
-    std::vector<Ctxt> ctxts(2, pk);
+
+    std::vector<Ctxt> ctxts(1, pk);
     pk.Encrypt(ctxts[0], NTL::to_ZZX(3));
-    pk.Encrypt(ctxts[1], NTL::to_ZZX(3));
-    ctxts[1].multiplyBy(ctxts[0]);
     send_ctxts(socket, ctxts);
     nn_close(socket);
 }
 
 void act_client(int socket) {
-    FHEcontext context(1024, 1031, 1);
-    buildModChain(context, 3);
+    FHEcontext context(gM, gP, gR);
+    buildModChain(context, gL);
     FHESecKey sk(context);
     sk.GenSecKey(64);
     FHEPubKey &pk = sk;
     send_pk(socket, pk);
+
     std::vector<Ctxt> ctxts;
     receive_ctxt(socket, pk, ctxts);
-    NTL::ZZX plain;
-    for (auto &ctxt : ctxts) {
-        sk.Decrypt(plain, ctxt);
-        std::cout << plain << "\n";
-    }
     nn_close(socket);
 }
 
 int main(int argc, char *argv[]) {
-    if (argc > 1) {
+    ArgMapping mapping;
+    long role = 0;
+    std::string host = "127.0.0.1";
+    mapping.arg("m", gM, "m");
+    mapping.arg("p", gP, "p");
+    mapping.arg("r", gR, "r");
+    mapping.arg("L", gL, "L");
+    mapping.arg("R", role, "role, 0:server, 1:client");
+    mapping.arg("H", host, "host");
+    mapping.parse(argc, argv);
+
+    if (role == 0) {
         int sock = nn_socket(AF_SP, NN_REP);
-        if (nn_bind(sock, "ipc:///tmp/reqrep.ipc") < 0) {
-            printf("%s\nn", nn_strerror(errno));
+        if (nn_bind(sock, "tcp://*:12345") < 0) {
+            printf("%s\n", nn_strerror(errno));
             return -1;
         }
         printf("SID %d\n", sock);
         act_server(sock);
-    } else {
+    } else if (role == 1){
         int sock = nn_socket(AF_SP, NN_REQ);
-        if (nn_connect(sock, "ipc:///tmp/reqrep.ipc") < 0) {
+        std::string h = "tcp://" + host + ":12345";
+        if (nn_connect(sock, h.c_str()) < 0) {
             printf("%s\nn", nn_strerror(errno));
             return -1;
         }
