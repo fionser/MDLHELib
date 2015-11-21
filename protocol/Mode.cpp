@@ -7,7 +7,7 @@
 #include <vector>
 #include <thread>
 
-#ifdef FHE_THREAD
+#ifdef FHE_THREADS
 const long NRWORKER = 8;
 #else
 const long NRWORKER = 1;
@@ -53,18 +53,20 @@ Mode::Result::ptr computeMode(const Mode::Input &input,
     auto results = std::make_shared<Mode::ConcreteResult>(input.slotToProcess);
     auto plainSpace = ea.getContext().alMod.getPPowR();
     std::atomic<long> counter(0);
+    std::atomic<long> counter2(0);
     std::vector<std::thread> workers;
+	std::vector<MDL::EncVector> replicated(input.slotToProcess, input.slots);
 
     for (long wr = 0; wr < NRWORKER; wr++) {
         workers.push_back(std::thread([&]() {
             long i;
+			while ((i = counter2.fetch_add(1)) < input.slotToProcess) {
+				replicate(ea, replicated[i], i);
+			}
+
             while ((i = counter.fetch_add(1)) < input.slotToProcess) {
-                auto X(input.slots);
-                replicate(ea, X, i);
                 for (long j = i + 1; j < input.slotToProcess; j++) {
-                    auto Y(input.slots);
-                    replicate(ea, Y, j);
-                    GTInput<void> gt{X, Y, input.valueDomain, plainSpace};
+                    GTInput<void> gt = {replicated[i], replicated[j], input.valueDomain, plainSpace};
                     results->put(GT(gt, ea), i, j);
                 }
             } }));
