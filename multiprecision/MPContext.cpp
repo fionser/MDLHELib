@@ -16,29 +16,47 @@ static long getSlots(long m, long p)
     return phi_N(m) / multOrd(p, m);
 }
 
+static long gcd(long a, long b) {
+    if (a > b) std::swap(a, b);
+
+    auto r = b % a;
+    while (r > 0) {
+        a = r;
+        b = a;
+        r = b % a;
+    }
+    return a;
+}
+
+bool checkSlots(long required, long check) {
+    if (check < required) return false;
+    return gcd(required, check) == required;
+}
+
 static std::set<long> FindPrimes(long m, long p, long parts)
 {
     auto slots = getSlots(m, p);
     auto bits = static_cast<long>(std::ceil(std::log2(static_cast<double>(p))));
     std::set<long> primes;
-	{
-		std::vector<long> pprimes = {4139, 7321, 5381, 5783, 4231, 4937, 5279, 6679, 6323, 7459, 6791};
-		auto len = pprimes.size();
-		for (long pp = 0; pp < parts; pp++) primes.insert(pprimes[len - 1 - pp]);
-		return primes;
-	}
+	// {
+	// 	std::vector<long> pprimes = {4139, 7321, 5381, 5783, 4231, 4937, 5279, 6679, 6323, 7459, 6791};
+	// 	auto len = pprimes.size();
+	// 	for (long pp = 0; pp < parts; pp++) primes.insert(pprimes[len - 1 - pp]);
+	// 	return primes;
+	// }
+    primes.insert(p);
 	long generated = 1;
 	long trial = 0;
 	while (generated < parts) {
 
 		auto prime = NTL::RandomPrime_long(bits);
-		if (getSlots(m, prime) >= slots && (p % m) != 0) {
+        auto s = getSlots(m, prime);
+		if (checkSlots(slots, s)) {
 			auto ok = primes.insert(prime);
 			if (ok.second) {
-				printf("prime %ld\n", prime);
 				generated += 1;
 			}
-		}
+        }
 
 		if (trial++ > 1000) {
 			printf("Error: Can not find enough primes, only found %ld\n",

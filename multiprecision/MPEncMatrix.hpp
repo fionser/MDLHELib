@@ -37,6 +37,11 @@ public:
                      const MPPubKey &pk,
                      long columnToProces = 0);
 
+    MPEncMatrix& dot2(const MPEncMatrix &oth,
+                      const MPEncArray &ea,
+                      const MPPubKey &pk,
+                      long columnToProces = 0);
+
     MPEncMatrix& addConstant(const MDL::Matrix<long> &con,
                              const MPEncArray &ea);
 

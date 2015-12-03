@@ -3,6 +3,8 @@
 #include "MPSecKey.hpp"
 #include "MPEncArray.hpp"
 #include "MPReplicate.h"
+#include "MPRotate.h"
+#include <map>
 #ifdef FHE_THREADS
 const long WORKER_NR = 8;
 #else
@@ -53,6 +55,64 @@ MPEncVector MPEncMatrix::sDot(const MPEncVector &oth,
     }
 
     return parts[0];
+}
+
+// replicate 'd' copies of the 'vec'.
+static MPEncVector replicateMore(const MPEncVector &vec,
+                                 const MPEncArray &ea,
+                                 const MPPubKey &pk,
+                                 long columns,
+                                 long d) {
+    assert(ea.slots() >= copy * columns);
+    MPEncVector rv(vec), res(pk);
+    std::map<int, MPEncVector> map;
+
+    long length = columns;
+    while (d> 0) {
+        if ((d & 1) == 1) {
+            map.insert(std::make_pair(length, rv));
+        }
+        auto tmp(rv);
+        rotate(tmp, ea, length);
+        rv += tmp;
+        length <<= 1;
+        d >>= 1;
+    }
+
+    for (auto &kv : map) {
+        if (res.partsNum() > 0) {
+            rotate(res, ea, kv.first);
+            res += kv.second;
+        } else {
+            res = kv.second;
+        }
+    }
+    return res;
+}
+
+MPEncMatrix& MPEncMatrix::dot2(const MPEncMatrix &oth,
+                               const MPEncArray &ea,
+                               const MPPubKey &pk,
+                               long columnToProces)
+{
+    if (columnToProces <= 0) columnToProces = ea.slots();
+    auto rows = rowsNum();
+
+    for (long row = 0; row < rows; row++) {
+        MPEncVector oneRow(pk);
+
+        for (long col = 0; col < columnToProces; col++) {
+            auto tmp(ctxts[row]);
+            replicate(tmp, ea, col);
+            tmp *= oth.ctxts[col];
+            if (col > 0) oneRow += tmp;
+            else oneRow = tmp;
+        }
+        oneRow.reLinearize();
+        ctxts[row] = oneRow;
+    }
+
+    return *this;
 }
 
 MPEncMatrix& MPEncMatrix::dot(const MPEncMatrix &oth,

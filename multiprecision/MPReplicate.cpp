@@ -20,7 +20,7 @@ void replicate(MPEncVector &vec,
     auto job = [&counter, &parts, &vec, &ea, &c]() {
         long i;
         while ((i = counter.fetch_add(1)) < parts) {
-             replicate(*ea.get(i), vec.get(i), c);
+            replicate(*ea.get(i), vec.get(i), c);
         }
     };
 
