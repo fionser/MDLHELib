@@ -4,7 +4,7 @@
 #include <nanomsg/nn.h>
 namespace MDL {
 namespace net {
-const size_t MAX_ELEMENT_NR = 100;
+const size_t MAX_ELEMENT_NR = 500;
 struct msg_header {
     size_t msg_ele_nr;
     size_t msg_ele_sze[0];
@@ -25,6 +25,13 @@ size_t make_nn_header(struct nn_msghdr *hdr,
 void free_header(msg_header *hdr);
 
 void free_header(struct nn_msghdr *hdr, bool free_base);
+
+void receive_all(int socket,
+                 const std::vector<size_t> &lens);
+
+void send_all(int socket,
+              const std::vector<void *> &data,
+              const std::vector<size_t> &lens);
 
 template<class T>
 long receive(T &obj, int sock);

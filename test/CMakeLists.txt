@@ -19,6 +19,7 @@ add_executable(benchmark_percentile benchmark_percentile.cpp)
 add_executable(benchmark_LR benchmark_LR.cpp)
 add_executable(benchmark_covariance benchmark_covariance.cpp)
 add_executable(benchmark_paillier benchmark_paillier.cpp)
+add_executable(benchmark_network benchmark_network.cpp)
 
 target_link_libraries(test_EncryptVector algebra utils fhe)
 target_link_libraries(test_Matrix algebra utils)
@@ -38,6 +39,7 @@ target_link_libraries(benchmark_percentile protocol paillier utils algebra fhe)
 target_link_libraries(benchmark_LR protocol utils multiprecision algebra fhe)
 target_link_libraries(benchmark_covariance protocol algebra utils fhe)
 target_link_libraries(benchmark_paillier utils paillier algebra fhe)
+target_link_libraries(benchmark_network utils net)
 
 file(COPY adult_result adult.data covariance.data all_float_data DESTINATION .)
 
