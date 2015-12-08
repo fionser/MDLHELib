@@ -1,3 +1,4 @@
+#ifdef USE_NETWORK
 #include <nanomsg/nn.h>
 #include <nanomsg/reqrep.h>
 #include <iostream>
@@ -120,8 +121,10 @@ void act_client(int socket) {
     receive_ctxt(socket, pk, ctxts);
     nn_close(socket);
 }
+#endif
 
 int main(int argc, char *argv[]) {
+#ifdef USE_NETWORK
     ArgMapping mapping;
     long role = 0;
     std::string host = "127.0.0.1";
@@ -152,5 +155,6 @@ int main(int argc, char *argv[]) {
         printf("SID %d\n", sock);
         act_client(sock);
     }
+#endif
     return 0;
 }

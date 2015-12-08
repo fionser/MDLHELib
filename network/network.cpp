@@ -4,6 +4,7 @@
 #include <cstring>
 namespace MDL {
 namespace net {
+#ifdef USE_NETWORK
 size_t header_size(const msg_header *hdr) {
     return sizeof(hdr->msg_ele_sze[0]) * hdr->msg_ele_nr
         + sizeof(hdr->msg_ele_nr);
@@ -40,7 +41,7 @@ void send_all(int socket,
               const std::vector<void *> &data,
               const std::vector<size_t> &lens) {
 	struct nn_msghdr hdr;
-	size_t to_send = data.size();	
+	size_t to_send = data.size();
 
 	std::memset(&hdr, 0, sizeof hdr);
     	hdr.msg_iov = (struct nn_iovec *)nn_allocmsg(sizeof(struct nn_iovec) * MAX_ELEMENT_NR, 0);
@@ -67,8 +68,8 @@ void receive_all(int socket,
                  const std::vector<size_t> &lens) {
 	struct nn_msghdr hdr;
 	size_t to_receive = lens.size();
-	size_t msg_nr = std::min(to_receive, MAX_ELEMENT_NR);	
-	
+	size_t msg_nr = std::min(to_receive, MAX_ELEMENT_NR);
+
 	std::memset(&hdr, 0, sizeof hdr);
     	hdr.msg_iov = (struct nn_iovec *)nn_allocmsg(sizeof(struct nn_iovec) * MAX_ELEMENT_NR, 0);
 	for (size_t i = 0; i < MAX_ELEMENT_NR; i++) {
@@ -92,7 +93,7 @@ void receive_all(int socket,
 		nn_recvmsg(socket, &hdr, 0);
 		nn_send(socket, NULL, 0, 0);
 		i += msg_nr;
-		to_receive -= msg_nr;	
+		to_receive -= msg_nr;
 		msg_nr = std::min(to_receive, MAX_ELEMENT_NR);
 	}
 	printf("receive all!\n");
@@ -122,5 +123,6 @@ void free_header(struct nn_msghdr *hdr, bool free_base) {
 void free_header(struct msg_header *hdr) {
     nn_freemsg(hdr);
 }
+#endif
 }
 };

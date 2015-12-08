@@ -34,13 +34,13 @@ int main() {
     encMat.pack(mat, pk, ea);
     encMat2.pack(mat, pk, ea);
 
-    auto rep = repeat(encVec, ea, pk, vec.size(), vec.size());
-    totalSums(rep, ea, vec.size());
-    {
-        MDL::Vector<NTL::ZZ> res;
-        rep.unpack(res, sk, ea);
-        std::cout << res << "\n";
-    }
+    // auto rep = repeat(encVec, ea, pk, vec.size(), vec.size());
+    // totalSums(rep, ea, vec.size());
+    // {
+    //     MDL::Vector<NTL::ZZ> res;
+    //     rep.unpack(res, sk, ea);
+    //     std::cout << res << "\n";
+    // }
     // MDL::Timer timer;
     // timer.start();
     // encMat = encMat.dot(encMat2, ea, pk, 3);

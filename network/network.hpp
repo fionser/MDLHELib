@@ -4,6 +4,7 @@
 #include <nanomsg/nn.h>
 namespace MDL {
 namespace net {
+#ifdef USE_NETWORK
 const size_t MAX_ELEMENT_NR = 500;
 struct msg_header {
     size_t msg_ele_nr;
@@ -38,6 +39,7 @@ long receive(T &obj, int sock);
 
 template<class T>
 long send(const T &obj, int sock);
+#endif
 } // namespace net
 }; // namespace MDL
 #endif // NETWORK_NETWORK_HPP

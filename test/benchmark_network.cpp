@@ -1,3 +1,4 @@
+#ifdef USE_NETWORK
 #include <nanomsg/nn.h>
 #include <nanomsg/reqrep.h>
 #include <unistd.h>
@@ -34,10 +35,10 @@ void act_client(std::string &addr, size_t sze) {
 
 	std::vector<size_t> lens;
 	make_package(sze, lens);
-	std::vector<void *> data;	
+	std::vector<void *> data;
 	for (auto len : lens)
 		data.push_back((void *)new char[len]);
-	
+
 	MDL::Timer timer;
 	nn_send(sock, NULL, 0, 0);
 	nn_recv(sock, NULL, 0, 0);
@@ -76,8 +77,10 @@ void act_server(size_t sze) {
 	printf("receive %f\n", timer.second());
 	nn_close(sock);
 }
+#endif
 
 int main(int argc, char *argv[]) {
+#ifdef USE_NETWORK
 	int oc, role;
 	std::string addr;
 	size_t sze;
@@ -102,6 +105,7 @@ int main(int argc, char *argv[]) {
 	case 1:
 	act_server(sze);
 	break;
-	}	
-	return 0;	
+	}
+#endif
+	return 0;
 }
