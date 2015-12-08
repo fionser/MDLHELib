@@ -57,7 +57,12 @@ public:
     MPEncMatrix& operator-=(const MPEncMatrix &oth);
 
     const MPEncVector& get(int index) const { return ctxts[index]; }
+
+    long getColumns() const { return columns; }
+
+    void setColumns(long c) { columns = c; }
 private:
+    long columns = -1;
     // MPPubKey &_pk;
     std::vector<MPEncVector> ctxts;
 };

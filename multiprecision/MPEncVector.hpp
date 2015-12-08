@@ -44,7 +44,12 @@ public:
     MDL::EncVector& get(int index) { return ctxts[index]; }
 
     void reLinearize();
+
+    long getLength() const { return length; }
+
+    void setLength(long l) { length = l; }
 private:
+    long length = -1;
     std::vector<MDL::EncVector> ctxts;
 };
 #endif // multiprecision/MPEncVector.hpp

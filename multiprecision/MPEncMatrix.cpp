@@ -23,6 +23,7 @@ void MPEncMatrix::pack(const MDL::Matrix<long> &mat,
     for (long r = 0; r < rows; r++) {
         ctxts[r].pack(mat[r], ea);
     }
+    columns = mat.cols();
 }
 
 void MPEncMatrix::unpack(MDL::Matrix<NTL::ZZ> &result,

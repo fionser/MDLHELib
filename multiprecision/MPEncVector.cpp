@@ -27,6 +27,7 @@ void MPEncVector::pack(const MDL::Vector<long> &vec,
     for (int i = 0; i < num; i++) {
         ctxts[i].pack(vec, *ea.get(i));
     }
+    length = vec.dimension();
 }
 
 void MPEncVector::unpack(MDL::Vector<NTL::ZZ> &vec,
