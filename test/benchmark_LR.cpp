@@ -13,6 +13,7 @@ const long WORKER_NR = 1;
 std::string gfile;
 long gD;
 long gMU;
+#ifdef USE_EIGEN
 MDL::Vector<double> getTrueW(const MDL::Matrix<long> &XtX,
                              const MDL::Vector<long> &XtY)
 {
@@ -20,6 +21,7 @@ MDL::Vector<double> getTrueW(const MDL::Matrix<long> &XtX,
     auto inv = XtX.inverse();
     return inv.dot(XtY.reduce(1.0));
 }
+#endif
 
 void benchmarkLR(const MPContext &context,
                  const MPSecKey &sk,
@@ -34,8 +36,9 @@ void benchmarkLR(const MPContext &context,
     auto _XtY = _raw.submatrix(0, -1, gD - 1, gD - 1).vector();
     MDL::Vector<long> _MU(_XtY.dimension());
 
-
+#ifdef USE_EIGEN
     std::cout << "trueW " << getTrueW(_XtX, _XtY) << std::endl;
+#endif
     XtX.pack(_XtX, pk, ea);
     XtY.pack(_XtY, ea);
     evalTimer.start();

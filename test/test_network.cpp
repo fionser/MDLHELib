@@ -80,6 +80,7 @@ void receive_ctxt(int socket, const FHEPubKey &pk,
     MDL::net::make_nn_header(&nn_hdr, lens);
     printf("%zd\n", nn_hdr.msg_iovlen);
     nn_recvmsg(socket, &nn_hdr, 0); // recv data
+    timer.end();
 
     Ctxt c(pk);
     for (size_t i = 0; i < nn_hdr.msg_iovlen; i++) {
@@ -87,7 +88,6 @@ void receive_ctxt(int socket, const FHEPubKey &pk,
         sstream >> c;
         ctxts.push_back(c);
     }
-    timer.end();
     nn_freemsg(buf);
     nn_send(socket, NULL, 0, 0);
     printf("receive %zd ciphers %fs\n", ctxts.size(), timer.second());

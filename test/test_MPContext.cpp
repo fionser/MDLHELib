@@ -1,66 +1,53 @@
-#include "algebra/NDSS.h"
-#include "fhe/FHE.h"
+#include "multiprecision/Multiprecision.h"
+#include "multiprecision/MPRotate.h"
+#include "multiprecision/MPReplicate.h"
+#include "algebra/Vector.hpp"
+#include "protocol/LR.hpp"
 #include "utils/timer.hpp"
 #include <NTL/ZZ.h>
 #include <iostream>
-int main(int argc, char *argv[]) {
-	ArgMapping argmap;
-	long m, L, p, r, D;
-    argmap.arg("m", m, "m");
-    argmap.arg("L", L, "L");
-    argmap.arg("p", p, "p");
-    argmap.arg("r", r, "r");
-    argmap.arg("D", D, "D");
-    argmap.parse(argc, argv);
+#include <map>
 
-    FHEcontext context(m, p, r);
-	buildModChain(context, L);
-    FHESecKey sk(context);
-	sk.GenSecKey(64);
-	addSome1DMatrices(sk);
-    FHEPubKey pk = sk;
-    auto G = context.alMod.getFactorsOverZZ()[0];
-    EncryptedArray ea(context, G);
-
-    MDL::Vector<long> vec(D);
-    MDL::Matrix<long> mat(D, D);
-    vec[0] = 10; vec[1] = 10; vec[2] = 10;
+int main() {
+    long m, p, r, P;
+    m = 5227;
+    p = 67499;
+    r = 1;
+    P = 1;
+    MPContext context(m, p, r, P);
+    context.buildModChain(8);
+    MPSecKey sk(context);
+    MPPubKey pk(sk);
+    MPEncArray ea(context);
+    printf("going to pack with %ld slots\n", ea.slots());
+    MDL::Vector<long> vec(13);
+    MDL::Matrix<long> mat(3, 3);
+    for (int i = 0; i < vec.dimension(); i++)
+        vec[i] = i;
     mat[0][0] = 1; mat[0][1] = 2; mat[0][2] = 3;
     mat[1][0] = 2; mat[1][1] = 3; mat[1][2] = 4;
     mat[2][0] = 3; mat[2][1] = 4; mat[2][2] = 5;
 
-	MDL::EncVector encVec(pk);
-    MDL::EncMatrix encMat(pk), encMat2(pk);
+	MPEncVector encVec(pk);
+    MPEncMatrix encMat, encMat2;
     encVec.pack(vec, ea);
-    encMat.pack(mat, ea);
-    encMat2.pack(mat, ea);
-	{
-		MDL::Timer time;
-		time.start();
-		encMat += encMat2;
-		MDL::Matrix<ZZX> result;
-		encMat.unpack(result, sk, ea, true);
-		time.end();
-		printf("X + Y %f\n", time.second());
-	}
-	{
-		MDL::Timer time;
-		auto tmp(encMat);
-		time.start();
-		tmp.dot(encMat2, ea, D);
-		MDL::Matrix<ZZX> result;
-		tmp.unpack(result, sk, ea, true);
-		time.end();
-		printf("XY %f\n", time.second());
-	}
-    /* { */
-		/* MDL::Timer time; */
-		/* time.start(); */
-		/* MDL::Vector<ZZX> result; */
-    /*     auto prod = encMat.column_dot(encVec, ea, D); */
-    /*     prod.unpack(result, sk, ea, true); */
-		/* time.end(); */
-		/* printf("Xv %f %zd\n", time.second(), result.dimension()); */
-    /* } */
+    encMat.pack(mat, pk, ea);
+    encMat2.pack(mat, pk, ea);
+
+    auto rep = repeat(encVec, ea, pk, vec.size(), vec.size());
+    totalSums(rep, ea, vec.size());
+    {
+        MDL::Vector<NTL::ZZ> res;
+        rep.unpack(res, sk, ea);
+        std::cout << res << "\n";
+    }
+    // MDL::Timer timer;
+    // timer.start();
+    // encMat = encMat.dot(encMat2, ea, pk, 3);
+    // timer.end();
+    // MDL::Matrix<NTL::ZZ> zzMat(3, 3);
+    // encMat.unpack(zzMat, sk, ea, true);
+    // std::cout << zzMat << "\n";
+    // printf("mult %f\n", timer.second());
     return 0;
 }

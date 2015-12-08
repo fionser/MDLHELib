@@ -1,6 +1,8 @@
 #include "Matrix.hpp"
 #include "fhe/EncryptedArray.h"
+#ifdef USE_EIGEN
 #include <eigen3/Eigen/Eigenvalues>
+#endif
 namespace MDL {
 template<typename T>
 size_t Matrix<T>::cols() const {
@@ -17,19 +19,6 @@ size_t Matrix<long>::rows() const {
 template<>
 size_t Matrix<double>::rows() const {
     return this->size();
-}
-
-template<typename U>
-Eigen::MatrixXd Matrix<U>::to_Eigen_matrix_format() const
-{
-    Eigen::MatrixXd mat = Eigen::MatrixXd::Random(rows(), cols());
-
-    for (size_t r = 0; r < rows(); r++) {
-        for (size_t c = 0; c < cols(); c++) {
-            mat(r, c) = static_cast<double>(this->at(r).at(c));
-        }
-    }
-    return mat;
 }
 
 template<typename T>
@@ -58,6 +47,20 @@ Matrix<T>& Matrix<T>::operator-=(const Matrix<T> &oth)
         this->at(r) -= oth[r];
     }
     return *this;
+}
+
+#ifdef USE_EIGEN
+template<typename U>
+Eigen::MatrixXd Matrix<U>::to_Eigen_matrix_format() const
+{
+    Eigen::MatrixXd mat = Eigen::MatrixXd::Random(rows(), cols());
+
+    for (size_t r = 0; r < rows(); r++) {
+        for (size_t c = 0; c < cols(); c++) {
+            mat(r, c) = static_cast<double>(this->at(r).at(c));
+        }
+    }
+    return mat;
 }
 
 template<typename T>
@@ -102,6 +105,17 @@ Matrix<double>Matrix<U>::inverse() const {
     return ret;
 }
 
+template<>
+Matrix<double>Matrix<double>::dot(const Matrix<double>& oth) const {
+    auto mat1 = to_Eigen_matrix_format();
+    auto mat2 = oth.to_Eigen_matrix_format();
+
+    Matrix<double> prod;
+    prod.from_Eigen_matrix(mat1 * mat2);
+    return prod;
+}
+#endif
+
 template<typename T>
 Vector<T> Matrix<T>::dot(const Vector<T>& oth) const
 {
@@ -113,15 +127,7 @@ Vector<T> Matrix<T>::dot(const Vector<T>& oth) const
     return prod;
 }
 
-template<>
-Matrix<double>Matrix<double>::dot(const Matrix<double>& oth) const {
-    auto mat1 = to_Eigen_matrix_format();
-    auto mat2 = oth.to_Eigen_matrix_format();
 
-    Matrix<double> prod;
-    prod.from_Eigen_matrix(mat1 * mat2);
-    return prod;
-}
 
 template<>
 Matrix<long>Matrix<long>::dot(const Matrix<long>& oth) const {

@@ -4,7 +4,9 @@
 
 #include <vector>
 #include <iostream>
+#ifdef USE_EIGEN
 #include <eigen3/Eigen/Dense>
+#endif
 #include <NTL/ZZX.h>
 class EncryptedArray;
 namespace MDL {
@@ -17,15 +19,15 @@ public:
     size_t rows() const;
     size_t cols() const;
 
-    double        maxEigenValue() const;
-    Matrix<double>inverse() const;
 
     Matrix<T>  dot(const Matrix<T>& oth) const;
     Vector<T>  dot(const Vector<T>& oth) const;
+#ifdef USE_EIGEN
+    double        maxEigenValue() const;
+    Matrix<double>inverse() const;
     Eigen::MatrixXd to_Eigen_matrix_format() const;
-
     void from_Eigen_matrix(const Eigen::MatrixXd& mat);
-
+#endif
     std::vector<NTL::ZZX> encode(const EncryptedArray &ea) const;
 
     Matrix& operator*=(const T &val);

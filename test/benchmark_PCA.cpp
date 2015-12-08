@@ -27,8 +27,9 @@ int main(int argc, char *argv[]) {
     }
     auto X = load_csv("PCA_1000");
     MDL::Timer encTimer, evalTimer, decTimer, keyTimer;
+#ifdef USE_EIGEN
     auto maxEigValue = X.maxEigenValue();
-
+#endif
     keyTimer.start();
     MPContext context(m, p, r, P);
     context.buildModChain(L);
@@ -58,9 +59,10 @@ int main(int argc, char *argv[]) {
     decTimer.end();
 
     auto approx = v1.L2() / v2.L2();
+#ifdef USE_EIGEN
     printf("%f %f\n", approx, maxEigValue);
     std::cout << "Error: " << std::abs(approx - maxEigValue) / maxEigValue << std::endl;
-
+#endif
     printf("KeyGen\tEnc\tEval\tDec\n%f\t%f\t%f\t%f\n",
            keyTimer.second(), encTimer.second(),
            evalTimer.second(), decTimer.second());

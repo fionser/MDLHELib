@@ -2,8 +2,10 @@
 #include "algebra/Vector.hpp"
 #include "utils/GreaterThanUtils.hpp"
 #include <NTL/ZZX.h>
+#include <cassert>
 void test_Matrix()
 {
+#ifdef USE_EIGEN
     MDL::Matrix<double> mat(3, 3);
 
     mat[0][0] = 10;
@@ -30,6 +32,7 @@ void test_Matrix()
         prod = matT.dot(submat);
         std::cout << prod << std::endl;
     }
+#endif
 }
 
 void test_Vector()

@@ -2,6 +2,7 @@
 #include "utils/FileUtils.hpp"
 #include "algebra/NDSS.h"
 #include "utils/timer.hpp"
+#include "utils/encoding.hpp"
 #include <vector>
 #include <thread>
 #ifdef FHE_THREADS
@@ -60,6 +61,33 @@ MDL::Paillier::Ctxt mean(const std::vector<MDL::Paillier::Ctxt> &ctxts) {
 		   sze, timer.second());
 	return parts[0];
 }
+
+//std::vector<MDL::Paillier::Ctxt> encrypt_for_percentile(const MDL::Matrix<long> &data,
+//                                                        const MDL::Paillier::PubKey &pk,
+//                                                        long bits,
+//                                                        long int feature) {
+//    using namespace MDL;
+//    std::vector<std::thread> workers;
+//    std::atomic<size_t> counter(0);
+//    auto nr_prime = pk.GetPrimes().size();
+//    auto bit_per_prime = pk.bits_per_prime();
+//    auto slot_one_cipher = nr_prime / ((bits + bit_per_prime - 1) / bit_per_prime);
+//
+//    Timer timer;
+//    timer.start();
+//    for (long wr = 0; wr < work_nr; wr++) {
+//        workers.push_back(std::move(std::thread([&]() {
+//            size_t next;
+//
+//            while ((next = counter.fetch_add(1)) < data.rows()) {
+//                auto indicator = encoding::staircase(data[next][feature],
+//                                                     slot_one_cipher);
+//            }
+//        })));
+//    }
+//
+//    timer.end();
+//}
 
 int main(int argc, char *argv[]) {
     std::string file;
