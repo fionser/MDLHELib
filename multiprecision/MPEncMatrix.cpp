@@ -96,7 +96,11 @@ MPEncMatrix& MPEncMatrix::dot2(const MPEncMatrix &oth,
                                const MPPubKey &pk,
                                long columnToProces)
 {
-    if (columnToProces <= 0) columnToProces = ea.slots();
+    if (columnToProces <= 0) {
+        if (columns < 0) columnToProces = ea.slots();
+        else columnToProces = columns;
+    }
+
     auto rows = rowsNum();
 
     for (long row = 0; row < rows; row++) {
@@ -121,7 +125,13 @@ MPEncMatrix& MPEncMatrix::dot(const MPEncMatrix &oth,
                               const MPPubKey &pk,
                               long columnToProces)
 {
-    if (columnToProces <= 0) columnToProces = ea.slots();
+    if (columnToProces <= 0) {
+        if (columns < 0)
+            columnToProces = ea.slots();
+        else
+            columnToProces = columns;
+    }
+
     auto rows = rowsNum();
 
     for (long row = 0; row < rows; row++) {
