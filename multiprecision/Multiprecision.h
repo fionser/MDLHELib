@@ -8,4 +8,6 @@
 #include "MPReplicate.h"
 #include "MPSecKey.hpp"
 #include "MPRotate.h"
+#include "MPSwap.h"
+#include "MPRepeat.h"
 #endif // MULTIPRECISION_MULTIPRESION_H

@@ -61,6 +61,10 @@ public:
     long getColumns() const { return columns; }
 
     void setColumns(long c) { columns = c; }
+
+    void flatten(MPEncVector &out,
+                 const MPPubKey &pk,
+                 const MPEncArray &ea) const;
 private:
     long columns = -1;
     // MPPubKey &_pk;
