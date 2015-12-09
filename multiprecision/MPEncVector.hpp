@@ -11,6 +11,8 @@ class MPEncVector {
 public:
     MPEncVector(const MPPubKey &pk);
 
+    ~MPEncVector() {}
+
     void pack(const MDL::Vector<long> &vec,
               const MPEncArray &ea);
 
@@ -42,6 +44,8 @@ public:
     size_t partsNum() const { return ctxts.size(); }
 
     MDL::EncVector& get(int index) { return ctxts[index]; }
+
+    const MDL::EncVector& get(int index) const { return ctxts[index]; }
 
     void reLinearize();
 private:

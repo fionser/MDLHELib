@@ -55,10 +55,12 @@ void totalSums(MPEncVector &vec, const MPEncArray &ea, const long blockSize) {
 }
 
 static void totalSums(const EncryptedArray& ea, long blockSize, Ctxt& ctxt) {
+    if (ea.size() % blockSize != 0)
+        printf("WARNINNG! the totalSums might be wrong!: blockSize %ld with %zd slots\n",
+               blockSize, ea.size());
     long n = ea.size();
-    n = (n + blockSize - 1) / blockSize;
+    n = n / blockSize;
     if (n == 1) return;
-
     Ctxt orig = ctxt;
 
     long k = NumBits(n);
@@ -68,7 +70,7 @@ static void totalSums(const EncryptedArray& ea, long blockSize, Ctxt& ctxt) {
         Ctxt tmp1 = ctxt;
         ea.rotate(tmp1, e * blockSize);
         ctxt += tmp1; // ctxt = ctxt + (ctxt >>> e)
-        e = 2*e;
+        e = 2 * e;
 
         if (bit(n, i)) {
             Ctxt tmp2 = orig;
@@ -77,7 +79,7 @@ static void totalSums(const EncryptedArray& ea, long blockSize, Ctxt& ctxt) {
             // NOTE: we could have also computed
             // ctxt =  (ctxt >>> e) + orig, however,
             // this would give us greater depth/noise
-            e += blockSize;
+            e += 1;
         }
     }
 }

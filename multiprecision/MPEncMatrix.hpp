@@ -15,6 +15,8 @@ class MPEncMatrix {
 public:
     MPEncMatrix() {}
 
+    ~MPEncMatrix() {}
+
     MPEncMatrix(const std::vector<MPEncVector> &copy);
 
     size_t rowsNum() const { return ctxts.size(); }
@@ -57,6 +59,12 @@ public:
     MPEncMatrix& operator-=(const MPEncMatrix &oth);
 
     const MPEncVector& get(int index) const { return ctxts[index]; }
+
+    MPEncVector flatten(const MPEncArray &ea, long columnToProces) const;
+
+    MPEncMatrix& repeatEachRow(const long k, const long columns,
+                               const MPEncArray &ea,
+                               const MPPubKey &pk);
 private:
     // MPPubKey &_pk;
     std::vector<MPEncVector> ctxts;

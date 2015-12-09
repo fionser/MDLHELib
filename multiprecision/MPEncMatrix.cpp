@@ -57,39 +57,6 @@ MPEncVector MPEncMatrix::sDot(const MPEncVector &oth,
     return parts[0];
 }
 
-// replicate 'd' copies of the 'vec'.
-static MPEncVector replicateMore(const MPEncVector &vec,
-                                 const MPEncArray &ea,
-                                 const MPPubKey &pk,
-                                 long columns,
-                                 long d) {
-    assert(ea.slots() >= copy * columns);
-    MPEncVector rv(vec), res(pk);
-    std::map<int, MPEncVector> map;
-
-    long length = columns;
-    while (d> 0) {
-        if ((d & 1) == 1) {
-            map.insert(std::make_pair(length, rv));
-        }
-        auto tmp(rv);
-        rotate(tmp, ea, length);
-        rv += tmp;
-        length <<= 1;
-        d >>= 1;
-    }
-
-    for (auto &kv : map) {
-        if (res.partsNum() > 0) {
-            rotate(res, ea, kv.first);
-            res += kv.second;
-        } else {
-            res = kv.second;
-        }
-    }
-    return res;
-}
-
 MPEncMatrix& MPEncMatrix::dot2(const MPEncMatrix &oth,
                                const MPEncArray &ea,
                                const MPPubKey &pk,
@@ -214,4 +181,47 @@ MPEncMatrix mulMatrix(const MPEncVector &vec,
         ctxts.push_back(tmp.mulConstant(row, ea));
     }
     return MPEncMatrix(ctxts);
+}
+
+static MPEncVector recrusiveFlatten(const std::vector<MPEncVector> &rows,
+                                    const std::vector<long> lengths,
+                                    const MPEncArray &ea) {
+    auto sze = rows.size();
+    if (sze == 1) return rows.front();
+    std::vector<MPEncVector> new_rows;
+    std::vector<long> new_lengths;
+    for (size_t i = 0; i < sze; i += 2) {
+        if (i + 1 < sze) {
+            auto tmp(rows[i]), tmp2(rows[i + 1]);
+            rotate(tmp2, ea, lengths[i]);
+            tmp += tmp2;
+            new_rows.push_back(tmp);
+            new_lengths.push_back(lengths[i] + lengths[i + 1]);
+        } else {
+            new_rows.push_back(rows[i]);
+            new_lengths.push_back(lengths[i]);
+        }
+    }
+    return recrusiveFlatten(new_rows, new_lengths, ea);
+}
+
+MPEncVector MPEncMatrix::flatten(const MPEncArray &ea, long columnToProces) const
+{
+    auto rows = ctxts.size();
+    assert(rows * columnToProces <= ea.slots());
+    std::vector<long> lengths(rows, columnToProces);
+    return recrusiveFlatten(ctxts, lengths, ea);
+}
+
+MPEncMatrix& MPEncMatrix::repeatEachRow(const long k, long columns,
+                                        const MPEncArray &ea, const MPPubKey &pk) {
+    if (ea.slots() < k * columns) {
+        printf("WARNNING: Not enough slots for repeating each row\n");
+        return *this;
+    }
+
+    for (auto &ctxt : ctxts) {
+        ctxt = repeat(ctxt, ea, pk, columns, k);
+    }
+    return *this;
 }
