@@ -32,7 +32,7 @@ void test_dot2(const MPEncMatrix &X,
     std::atomic<long> counter(0);
     auto program = [&]() {
         while (true) {
-            auto next = counter.add_fetch(1);
+            auto next = counter.fetch_add(1);
             if (next >= D) break;
             auto oneRow = repeat(X.get(next), ea, pk, D, D);
             MPEncVector result(pk);
