@@ -11,6 +11,7 @@
 #include <cstring>
 #include <vector>
 #include <atomic>
+#include <thread>
 #ifdef FHE_THREADS
 const long THREADS_NR = 8;
 #else
