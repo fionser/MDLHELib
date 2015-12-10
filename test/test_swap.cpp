@@ -10,6 +10,12 @@
 
 #include <cstring>
 #include <vector>
+#include <atomic>
+#ifdef FHE_THREADS
+const long THREADS_NR = 8;
+#else
+const long THREADS_NR = 1;
+#endif
 void test_dot2(const MPEncMatrix &X,
                const MPEncMatrix &Y,
                const MPPubKey &pk,
@@ -21,15 +27,23 @@ void test_dot2(const MPEncMatrix &X,
     timer.start();
     auto flattenY = Y.flatten(ea, D);
     std::vector<MPEncVector> ctxts(D, pk);
-    // for (int r = 0; r < X.rowsNum(); r++) {
-    for (int r : {0}) {
-        auto oneRow = repeat(X.get(r), ea, pk, D, D);
-        MPEncVector result(pk);
-        rearrange(ctxts[r], oneRow, ea, D, D);
+    auto rows = X.rowsNum();
+    std::atomic<long> counter(0);
+    auto program = [&]() {
+        while (true) {
+            auto next = counter.add_fetch(1);
+            if (next >= D) break;
+            auto oneRow = repeat(X.get(next), ea, pk, D, D);
+            MPEncVector result(pk);
+            rearrange(ctxts[next], oneRow, ea, D, D);
+            ctxts[next].multiplyBy(flattenY);
+            totalSums(ctxts[next], ea, D);
+        }
+    };
 
-        ctxts[r].multiplyBy(flattenY);
-        totalSums(ctxts[r], ea, D);
-    }
+    std::vector<std::thread> workers;
+    for (long w = 0; w < THREADS_NR; w++) workers.push_back(std::thread(program));
+    for (auto &&wr : workers) wr.join();
     timer.end();
 
     MDL::Matrix<NTL::ZZ> mat;
