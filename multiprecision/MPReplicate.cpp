@@ -6,6 +6,7 @@
 #include "fhe/replicate.h"
 #include <vector>
 #include <thread>
+#include <cstring>
 #include <map>
 #ifdef FHE_THREADS
 const long WORKER_NR = 8;

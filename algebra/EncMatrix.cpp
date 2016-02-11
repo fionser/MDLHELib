@@ -171,7 +171,7 @@ EncMatrix& EncMatrix::dot(const EncMatrix &oth,
                 for (size_t col = 0; col < col_to_process; col++) {
                     auto tmp(this->at(row));
                     replicate(ea, tmp, col);
-                    tmp.multiplyBy(oth[col]);
+                    tmp.multiplyBy(oth.at(col));
                     if (col > 0) oneRow += tmp;
                     else oneRow = tmp;
                 }
