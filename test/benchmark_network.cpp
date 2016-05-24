@@ -53,24 +53,24 @@ void act_client(std::string &addr, size_t sze) {
 
 	std::vector<size_t> lens;
 	make_package(sze, lens);
-	std::vector<void *> data;	
+	std::vector<void *> data;
 	for (auto len : lens)
 		data.push_back((void *)new char[len]);
-		
+
 	std::vector<double> times;
 	MDL::Timer timer;
 	nn_send(sock, NULL, 0, 0);
 	nn_recv(sock, NULL, 0, 0);
-   	for (int i = 0; i < 10; i++) {		
+   	for (int i = 0; i < 10; i++) {
 		timer.start();
 		MDL::net::send_all(sock, data, lens);
-		timer.end();	
+		timer.end();
 		times.push_back(timer.second());
 		//printf("send %zd %f\n", sze, timer.second());
         }
 	nn_close(sock);
 	auto ms = mean_std(times);
- 	printf("send %zd %f +- %f\n", sze, ms.first, ms.second);	
+ 	printf("send %zd %f +- %f\n", sze, ms.first, ms.second);
 	for (auto p : data) {
 		char *pp = (char *)p;
 		delete []pp;
@@ -100,7 +100,7 @@ void act_server(size_t sze) {
 		times.push_back(timer.second());
 	}
 	auto ms = mean_std(times);
- 	printf("receive %zd %f +- %f\n", sze, ms.first, ms.second);	
+ 	printf("receive %zd %f +- %f\n", sze, ms.first, ms.second);
 	nn_close(sock);
 }
 
@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
 			break;
 			case 'c':
 			char *end;
-			sze = static_cast<size_t>(1024 * std::strtod(optarg, &end));
+			sze = static_cast<size_t>(1024 * 1024 * std::strtod(optarg, &end));
 			break;
 			case 'r':
 			role = std::atoi(optarg);
@@ -130,6 +130,6 @@ int main(int argc, char *argv[]) {
 	case 1:
 	act_server(sze);
 	break;
-	}	
-	return 0;	
+	}
+	return 0;
 }
