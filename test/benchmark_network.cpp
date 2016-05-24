@@ -114,7 +114,8 @@ int main(int argc, char *argv[]) {
 			addr = std::string(optarg);
 			break;
 			case 'c':
-			sze = std::strtol(optarg, NULL, 10);
+			char *end;
+			sze = static_cast<size_t>(1024 * std::strtod(optarg, &end));
 			break;
 			case 'r':
 			role = std::atoi(optarg);
