@@ -40,17 +40,18 @@ void send_all(int socket,
               const std::vector<void *> &data,
               const std::vector<size_t> &lens) {
 	struct nn_msghdr hdr;
-	size_t to_send = data.size();	
+	size_t to_send = data.size();
 
 	std::memset(&hdr, 0, sizeof hdr);
     	hdr.msg_iov = (struct nn_iovec *)nn_allocmsg(sizeof(struct nn_iovec) * MAX_ELEMENT_NR, 0);
 	size_t msg_nr = std::min(to_send, MAX_ELEMENT_NR);
 	size_t i = 0;
-	printf("to send %zd\n", to_send);
+	size_t tl = 0;
 	while (to_send > 0) {
 		for (int j = 0; j < msg_nr; j++) {
 			hdr.msg_iov[j].iov_base = data[i + j];
 			hdr.msg_iov[j].iov_len = lens[i + j];
+			tl += lens[i + j];
 		}
 		hdr.msg_iovlen = msg_nr;
 		nn_sendmsg(socket, &hdr, 0);
@@ -59,7 +60,7 @@ void send_all(int socket,
 		to_send -= msg_nr;
 		msg_nr = std::min(to_send, MAX_ELEMENT_NR);
 	}
-	printf("sent all!\n");
+	printf("sent %f MB\n", tl / 1024.0 / 1024.0);
 	nn_freemsg(hdr.msg_iov);
 }
 
@@ -67,8 +68,8 @@ void receive_all(int socket,
                  const std::vector<size_t> &lens) {
 	struct nn_msghdr hdr;
 	size_t to_receive = lens.size();
-	size_t msg_nr = std::min(to_receive, MAX_ELEMENT_NR);	
-	
+	size_t msg_nr = std::min(to_receive, MAX_ELEMENT_NR);
+
 	std::memset(&hdr, 0, sizeof hdr);
     	hdr.msg_iov = (struct nn_iovec *)nn_allocmsg(sizeof(struct nn_iovec) * MAX_ELEMENT_NR, 0);
 	for (size_t i = 0; i < MAX_ELEMENT_NR; i++) {
@@ -77,7 +78,7 @@ void receive_all(int socket,
 	}
 
 	size_t i = 0;
-	printf("to receive %zd\n", to_receive);
+	size_t tl = 0;
 	while (to_receive > 0) {
 		for (size_t j = 0; j < msg_nr; j++) {
 			if (hdr.msg_iov[j].iov_len == 0) {
@@ -87,15 +88,16 @@ void receive_all(int socket,
 							                    lens[i + j]);
 			}
 			hdr.msg_iov[j].iov_len = lens[i + j];
+			tl += lens[i + j];
 		}
 		hdr.msg_iovlen = msg_nr;
 		nn_recvmsg(socket, &hdr, 0);
 		nn_send(socket, NULL, 0, 0);
 		i += msg_nr;
-		to_receive -= msg_nr;	
+		to_receive -= msg_nr;
 		msg_nr = std::min(to_receive, MAX_ELEMENT_NR);
 	}
-	printf("receive all!\n");
+	printf("received %f MB\n", tl / 1024.0 / 1024.0);
 	nn_freemsg(hdr.msg_iov);
 }
 
