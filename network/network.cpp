@@ -83,9 +83,9 @@ void receive_all(int socket,
 		for (size_t j = 0; j < msg_nr; j++) {
 			if (hdr.msg_iov[j].iov_len == 0) {
 				hdr.msg_iov[j].iov_base = nn_allocmsg(lens[i + j], 0);
-		        } else if (hdr.msg_iov[j].iov_len < lens[i + j]) {
+			} else if (hdr.msg_iov[j].iov_len < lens[i + j]) {
 				hdr.msg_iov[j].iov_base = nn_reallocmsg(hdr.msg_iov[j].iov_base,
-							                    lens[i + j]);
+														lens[i + j]);
 			}
 			hdr.msg_iov[j].iov_len = lens[i + j];
 			tl += lens[i + j];

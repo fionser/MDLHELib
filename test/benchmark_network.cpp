@@ -26,12 +26,14 @@ std::pair<double, double> mean_std(const std::vector<double> &v) {
 
 void make_package(size_t sze, std::vector<size_t> &lens) {
 	const size_t _1KB = 1024;
+	size_t tl = sze;
 	while (sze >= _1KB) {
 		lens.push_back(_1KB);
 		sze -= _1KB;
 	}
 	if (sze > 0)
 		lens.push_back(sze);
+	printf("make %zd packages total %f MB\n", lens.size(), tl / 1024.0 / 1024.0);
 }
 
 size_t check(struct nn_msghdr *nn_hdr, size_t sze) {
@@ -66,6 +68,7 @@ void act_client(std::string &addr, size_t sze) {
 		MDL::net::send_all(sock, data, lens);
 		timer.end();
 		times.push_back(timer.second());
+		timer.reset();
 		//printf("send %zd %f\n", sze, timer.second());
         }
 	nn_close(sock);
@@ -98,6 +101,7 @@ void act_server(size_t sze) {
 		MDL::net::receive_all(sock, lens);
 		timer.end();
 		times.push_back(timer.second());
+		timer.reset();
 	}
 	auto ms = mean_std(times);
  	printf("receive %zd %f +- %f\n", sze, ms.first, ms.second);
@@ -113,9 +117,12 @@ int main(int argc, char *argv[]) {
 			case 'a':
 			addr = std::string(optarg);
 			break;
-			case 'c':
-			char *end;
-			sze = static_cast<size_t>(1024 * 1024 * std::strtod(optarg, &end));
+			case 'c': {
+						  char *end;
+						  double MB = std::strtod(optarg, &end);
+						  sze = static_cast<size_t>(1024.0 * 1024.0 * MB);
+						  printf("MB %f\n", MB);
+					  }
 			break;
 			case 'r':
 			role = std::atoi(optarg);
