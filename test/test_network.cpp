@@ -114,6 +114,7 @@ void act_client(int socket) {
     FHESecKey sk(context);
     sk.GenSecKey(64);
     FHEPubKey &pk = sk;
+	printf("send pk\n");
     send_pk(socket, pk);
 
     std::vector<Ctxt> ctxts;

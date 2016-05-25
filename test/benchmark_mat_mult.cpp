@@ -29,10 +29,8 @@ double size(const MDL::EncMatrix &mat) {
 }
 
 int main() {
-	/* long m = 27893; */
-	/* long p = 4139; */
-	long m = 5227;
-	long p = 67499;
+	long m = 27893;
+	long p = 4139;
 	long L = 32;
 	long r = 1;
 	FHEcontext context(m, p, r);
@@ -46,7 +44,7 @@ int main() {
 	FHEPubKey pk = sk;
 	MDL::EncMatrix entMat(pk);
 
-	for (long D : {6, 12, 18, 24, 30, 36}) {
+	for (long D : {6, 12, 18}) {
 		MDL::Matrix<long> mat(D, D);
 		for (long i = 0; i < D; i++)
 			for (long j = 0; j < D; j++)
@@ -55,19 +53,25 @@ int main() {
 		MDL::Timer timer;
 		std::vector<double> tt;
 		std::vector<double> ss;
+		std::vector<double> dec;
 		for (long i = 0; i < 10; i++) {
 			auto tmp(entMat);
-			printf("size %zd %zd\n", tmp.size(), entMat.size());
-			timer.start();
+			timer.reset();
 			tmp.dot(entMat, ea, D);
 			timer.end();
 			tt.push_back(timer.second());
+
 			timer.reset();
-			//ss.push_back(size(tmp));
+			entMat.unpack(mat, sk, ea);
+			timer.end();
+			dec.push_back(timer.second());
+			ss.push_back(size(tmp));
 		}
-		printf("%ld ", D);
+
+		printf("%ld dot/size/dec", D);
 		mean_std(tt);
-		//mean_std(ss);
+		mean_std(ss);
+		mean_std(dec);
 	}
 	return 0;
 }

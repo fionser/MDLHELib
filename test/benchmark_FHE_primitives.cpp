@@ -5,6 +5,18 @@
 #include <utils/timer.hpp>
 
 #include <algebra/NDSS.h>
+#include <vector>
+void mean_std(const std::vector<double> &a) {
+	double s1 = 0.0;
+	for (auto aa : a)
+		s1 += aa;
+	s1 /= a.size();
+	double s2 = 0.0;
+	for (auto aa : a)
+		s2 += (aa - s1) * (aa - s1);
+	s2 = std::sqrt(s2) / (a.size() - 1);
+	printf("%f +- %f\n", s1, s2);
+}
 
 int main(int argc, char *argv[]) {
     long m, p, r, L;
@@ -31,26 +43,29 @@ int main(int argc, char *argv[]) {
            r, L, ea.size());
     printf("KeyGen %fs\n",                                     timer.second());
 
-    MDL::Vector<long> plain(ea.size());
+    MDL::Vector<long> plain(ea.size(), 3);
     MDL::EncVector    ctxt(pk);
-    {
-        timer.reset();
-        timer.start();
+    /* { */
+    /*     timer.reset(); */
+    /*     timer.start(); */
 
-        for (int i = 0; i < 1000; i++) {
-            ctxt.pack(plain, ea);
-        }
-        timer.end();
-        printf("Encryption %f ms\n", timer.second());
-    }
+    /*     for (int i = 0; i < 1000; i++) { */
+    /*         ctxt.pack(plain, ea); */
+    /*     } */
+    /*     timer.end(); */
+    /*     printf("Encryption %f ms\n", timer.second()); */
+    /* } */
     {
-        timer.reset(); timer.start();
-
-        for (int i = 0; i < 1000; i++) {
+		ctxt.pack(plain, ea);
+		std::vector<double> as;
+        for (int i = 0; i < 100; i++) {
+        	timer.reset();
+			timer.start();
             ctxt.unpack(plain, sk, ea);
+        	timer.end();
+			as.push_back(timer.second());
         }
-        timer.end();
-        printf("Decryption %f ms\n", timer.second());
+		mean_std(as);
     }
     {
         timer.reset(); timer.start();

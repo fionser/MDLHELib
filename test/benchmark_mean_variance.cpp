@@ -8,12 +8,22 @@
 #include <thread>
 #include <atomic>
 #include <vector>
+#include <iostream>
 
 #ifdef FHE_THREADS
 long WORKER_NR = 8;
 #else // ifdef FHE_THREADS
 long WORKER_NR = 1;
 #endif // ifdef FHE_THREAD
+std::pair<double, double> mean_and_std(const std::vector<double> &v) {
+	double m = 0;
+	for (auto vv : v) m += vv;
+	m /= v.size();
+	double s = 0;
+	for (auto vv : v) s += (vv - m) * (vv - m);
+	return {m, std::sqrt(s / v.size())};
+}
+
 std::vector<MDL::EncVector>encrypt(const MDL::Matrix<long>& data,
                                    const FHEPubKey        & pk,
                                    const EncryptedArray   & ea,
@@ -166,8 +176,8 @@ MDL::EncVector average(const MDL::Matrix<long>& data,
         evalTimer.start();
         if (part > 0) {
             result += mean(ctxts);
-        } else {
-            result = mean(ctxts);
+		} else {
+			result = mean(ctxts);
         }
 		evalTimer.end();
     }
@@ -177,6 +187,68 @@ MDL::EncVector average(const MDL::Matrix<long>& data,
            data.rows(), WORKER_NR, encTimer.second(),
 		   evalTimer.second(), totalTimer.second());
     return result;
+}
+
+void mean_run_std(const MDL::Matrix<long>&data, const EncryptedArray &ea,
+				  const FHEPubKey &pk) {
+	auto ctxts = encrypt(data, pk, ea, 0, 1000);
+	for (long L : {5, 10, 20, 32}) {
+		MDL::Timer timer;
+		std::vector<double> times;
+		for (long trial = 0; trial < 10; trial ++) {
+			timer.start();
+			MDL::EncVector result(pk);
+			for (long part = 0; part < L; part ++) {
+				if (part > 0) {
+					result += mean(ctxts);
+				} else {
+					result = mean(ctxts);
+				}
+			}
+			timer.end();
+			times.push_back(timer.second());
+			timer.reset();
+		}
+		auto ms = mean_and_std(times);
+		printf("Mean %zd %f +- %f\n", L * 1000, ms.first, ms.second);
+	}
+}
+
+void  var_run_std(const MDL::Matrix<long>& data,
+				  const EncryptedArray   & ea,
+				  const FHEPubKey        & pk) {
+	auto ctxts = encrypt(data, pk, ea, 0, 1000);
+	printf("workers %ld\n", WORKER_NR);
+	for (long L : {5, 10, 20, 32}) {
+		MDL::Timer timer;
+		std::vector<double> times;
+		for (long trial = 0; trial < 10; trial ++) {
+    		MDL::EncVector square_sum(pk), sum_square(pk);
+			for (long part = 0; part < L; part ++) {
+				auto tmp(ctxts);
+				timer.start();
+				if (part > 0) {
+					sum_square += mean(ctxts);
+					square_sum += squareSum(tmp);
+				} else {
+					sum_square = mean(ctxts);
+					square_sum = squareSum(tmp);
+				}
+				timer.end();
+			}
+			timer.start();
+    		sum_square.square();
+			square_sum.multByConstant(NTL::ZZX(L * 1000L));
+			square_sum -= sum_square;
+			timer.end();
+
+			times.push_back(timer.second());
+			timer.reset();
+		}
+
+		auto ms = mean_and_std(times);
+		printf("Var %zd %f +- %f\n", L * 1000, ms.first, ms.second);
+	}
 }
 
 int main(int argc, char *argv[]) {
@@ -199,23 +271,14 @@ int main(int argc, char *argv[]) {
     auto G = context.alMod.getFactorsOverZZ()[0];
     EncryptedArray ea(context, G);
 	printf("slots %ld\n", ea.size());
-    auto result = load_csv("adult_result");
-
-    // auto ctxts  = encrypt(data, pk, ea);
-
-    // {
-    //     MDL::Vector<long> ret;
-    //     auto summaiton = mean(ctxts);
-    //     summaiton.unpack(ret, sk, ea);
-    //     std::cout << ret << std::endl;
-    //     std::cout << result[0] << std::endl;
-    // }
-
-    MDL::Vector<long> ret;
-    for (long R : {5000, 10000, 15000, 20000, 25000, 0}) {
-    	auto data   = load_csv("adult.data", R);
-        auto var = variance(data, ea, pk);
-        var.unpack(ret, sk, ea);
-    }
+    auto data = load_csv("adult.data", 5000);
+	/* mean_run_std(data, ea, pk); */
+	var_run_std(data, ea, pk);
+    //MDL::Vector<long> ret;
+    //for (long R : {5000, 10000, 15000, 20000, 25000, 0}) {
+    //	auto data   = load_csv("adult.data", R);
+    //auto var = variance(data, ea, pk);
+    // var.unpack(ret, sk, ea);
+    //}
     return 0;
 }
