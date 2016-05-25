@@ -12,9 +12,6 @@ namespace MDL
 {
 class EncVector;
 class EncMatrix;
-namespace PCA {
-const long ITERATION = 3;
-};
 
 std::pair<EncVector, EncVector> runPCA(const EncMatrix &mat,
                                        const EncryptedArray &ea,
@@ -23,6 +20,7 @@ std::pair<EncVector, EncVector> runPCA(const EncMatrix &mat,
 
 std::pair<MPEncVector, MPEncVector> runPCA(const MPEncMatrix &mat,
                                            const MPEncArray &ea,
-                                           const MPPubKey &pk);
+                                           const MPPubKey &pk,
+					   const long ITERATION = 3);
 } // namespace MDL
 #endif // PROTOCOL_PCA_HPP

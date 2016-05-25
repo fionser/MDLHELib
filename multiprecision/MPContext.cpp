@@ -38,13 +38,14 @@ static std::set<long> FindPrimes(long m, long p, long parts)
     auto slots = getSlots(m, p);
     auto bits = static_cast<long>(std::ceil(std::log2(static_cast<double>(p))));
     std::set<long> primes;
-	// {
-	// 	std::vector<long> pprimes = {4139, 7321, 5381, 5783, 4231, 4937, 5279, 6679, 6323, 7459, 6791};
-	// 	auto len = pprimes.size();
-	// 	for (long pp = 0; pp < parts; pp++) primes.insert(pprimes[len - 1 - pp]);
-	// 	return primes;
-	// }
-    primes.insert(p);
+{
+	std::vector<long> pprimes = {4139, 7321, 5381, 5783, 4231, 4937, 5279, 6679, 6323, 7459, 6791};
+	auto len = pprimes.size();
+	for (long pp = 0; pp < parts; pp++) primes.insert(pprimes[len - 1 - pp]);
+	return primes;
+}
+/*
+        primes.insert(p);
 	long generated = 1;
 	long trial = 0;
 	while (generated < parts) {
@@ -66,6 +67,7 @@ static std::set<long> FindPrimes(long m, long p, long parts)
 	}
 
 	return primes;
+*/
 }
 
 	MPContext::MPContext(long m, long p, long r, long parts)
