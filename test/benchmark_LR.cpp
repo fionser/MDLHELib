@@ -44,7 +44,8 @@ std::pair<double, double> mean_std(const std::vector<double> &v) {
 void benchmarkLR(const MPContext &context,
                  const MPSecKey &sk,
                  const MPPubKey &pk,
-                 const MPEncArray &ea)
+                 const MPEncArray &ea,
+				 const long T)
 {
     MPEncMatrix XtX;
     MPEncVector XtY(pk), MU(pk);
@@ -77,7 +78,7 @@ void benchmarkLR(const MPContext &context,
 	for (long trial = 0; trial < 10; trial++) {
 		lrEvalTimer.start();
 		MDL::MPMatInverseParam param = {pk, ea, gD - 1};
-		auto inv = MDL::inverse(XtX, MU, param);
+		auto inv = MDL::inverse(XtX, MU, param, T);
 
 		auto W = inv.sDot(XtY, pk, ea);
 		evalTimer.end();
@@ -94,7 +95,7 @@ void benchmarkLR(const MPContext &context,
 
 		if (trial > 0) continue;
 
-		auto factor = NTL::power(NTL::to_ZZ(_MU[0]), std::pow(2, MDL::LR::ITERATION));
+		auto factor = NTL::power(NTL::to_ZZ(_MU[0]), std::pow(2, T));
 		double dfactor;
 		NTL::conv(dfactor, factor);
 		std::cout << _W.reduce(dfactor) << std::endl;
@@ -108,6 +109,7 @@ void benchmarkLR(const MPContext &context,
 
 int main(int argc, char *argv[]) {
     long m, p, r, L, P;
+	long T;
     ArgMapping argmap;
 
     argmap.arg("m", m, "m");
@@ -118,9 +120,10 @@ int main(int argc, char *argv[]) {
     argmap.arg("f", gfile, "file");
     argmap.arg("u", gMU, "mu");
 	argmap.arg("D", gD, "dimension");
+	argmap.arg("T", T, "iteration");
     argmap.parse(argc, argv);
-	printf("m = %ld p = %ld r = %ld P = %ld L = %ld file = %s D = %ld Mu = %ld\n",
-		   m, p, r, P, L, gfile.c_str(), gD, gMU);
+	/* printf("m = %ld p = %ld r = %ld P = %ld L = %ld file = %s D = %ld Mu = %ld\n", */
+	/* 	   m, p, r, P, L, gfile.c_str(), gD, gMU); */
     MDL::Timer keyTimer;
     keyTimer.start();
     MPContext context(m, p, r, P);
@@ -130,6 +133,6 @@ int main(int argc, char *argv[]) {
     MPEncArray ea(context);
     keyTimer.end();
     std::cout << "slots " << ea.slots() << " plainText: " << context.precision() << std::endl;
-    benchmarkLR(context, sk, pk, ea);
+    benchmarkLR(context, sk, pk, ea, T);
     return 0;
 }
