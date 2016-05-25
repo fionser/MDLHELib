@@ -23,6 +23,24 @@ MDL::Vector<double> getTrueW(const MDL::Matrix<long> &XtX,
 }
 #endif
 
+std::pair<double, double> mean_std(const std::vector<double> &v) {
+	double m = 0;
+	for (auto vv : v) m += vv;
+	m /= v.size();
+
+	double s = 0;
+	for (auto vv : v) {
+		s += (vv - m) * (vv - m);
+	}
+
+	if (v.size() > 1)
+		s = std::sqrt(s / (v.size() - 1));
+	else
+		s = 0.0;
+
+	return std::make_pair(m, s);
+}
+
 void benchmarkLR(const MPContext &context,
                  const MPSecKey &sk,
                  const MPPubKey &pk,
@@ -55,25 +73,37 @@ void benchmarkLR(const MPContext &context,
 	}
 
 	MDL::Timer lrEvalTimer;
-	lrEvalTimer.start();
-    MDL::MPMatInverseParam param = {pk, ea, gD - 1};
-    auto inv = MDL::inverse(XtX, MU, param);
+	std::vector<double> evalTimes, decTimes;
+	for (long trial = 0; trial < 10; trial++) {
+		lrEvalTimer.start();
+		MDL::MPMatInverseParam param = {pk, ea, gD - 1};
+		auto inv = MDL::inverse(XtX, MU, param);
 
-    auto W = inv.sDot(XtY, pk, ea);
-    evalTimer.end();
-	lrEvalTimer.end();
+		auto W = inv.sDot(XtY, pk, ea);
+		evalTimer.end();
+		lrEvalTimer.end();
+		evalTimes.push_back(evalTimer.second());
+		evalTimer.reset();
 
-    MDL::Vector<NTL::ZZ> _W;
-    decTimer.start();
-    W.unpack(_W, sk, ea);
-    decTimer.end();
+		MDL::Vector<NTL::ZZ> _W;
+		decTimer.start();
+		W.unpack(_W, sk, ea);
+		decTimer.end();
+		decTimes.push_back(decTimer.second());
+		decTimer.reset();
 
-    auto factor = NTL::power(NTL::to_ZZ(_MU[0]), std::pow(2, MDL::LR::ITERATION));
-    double dfactor;
-    NTL::conv(dfactor, factor);
-    std::cout << _W.reduce(dfactor) << std::endl;
-    printf("%f %f %f\n", evalTimer.second(), lrEvalTimer.second(),
-		   decTimer.second());
+		if (trial > 0) continue;
+
+		auto factor = NTL::power(NTL::to_ZZ(_MU[0]), std::pow(2, MDL::LR::ITERATION));
+		double dfactor;
+		NTL::conv(dfactor, factor);
+		std::cout << _W.reduce(dfactor) << std::endl;
+	}
+
+	auto ms1 = mean_std(evalTimes);
+	auto ms2 = mean_std(decTimes);
+	printf("$%f \\pm %f$\n", ms1.first, ms1.second);
+	printf("$%f \\pm %f$\n", ms2.first, ms2.second);
 }
 
 int main(int argc, char *argv[]) {

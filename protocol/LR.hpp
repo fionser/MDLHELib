@@ -10,9 +10,9 @@ class MPEncMatrix;
 class MPEncVector;
 namespace MDL
 {
-namespace LR {
-const long ITERATION = 2;
-} //namespace
+/* namespace LR { */
+/* const long ITERATION = 2; */
+/* } //namespace */
 
 struct MatInverseParam {
     const FHEPubKey &pk;
@@ -27,9 +27,12 @@ struct MPMatInverseParam {
 };
 
 EncMatrix inverse(const EncMatrix &Q, long mu,
-                  const MatInverseParam &param);
+                  const MatInverseParam &param,
+				  const long ITERATION);
 
-MPEncMatrix inverse(const MPEncMatrix &Q, const MPEncVector &mu,
-                    const MPMatInverseParam &param);
+MPEncMatrix inverse(const MPEncMatrix &Q,
+					const MPEncVector &mu,
+                    const MPMatInverseParam &param,
+					const long ITERATION);
 } // namespace MDL
 #endif // MDL_LR_HPP

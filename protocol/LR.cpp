@@ -11,11 +11,12 @@
 namespace MDL
 {
 MPEncMatrix inverse(const MPEncMatrix &Q, const MPEncVector &mu,
-                    const MPMatInverseParam &param) {
+                    const MPMatInverseParam &param,
+					const long ITERATION) {
     auto M(Q), R(Q);
     auto MU(mu);
     auto I = MDL::eye(param.columnsToProcess); I *= 2;
-    for (int i = 0; i < MDL::LR::ITERATION; i++) {
+    for (int i = 0; i < ITERATION; i++) {
         auto tmp(M);
         tmp.negate();
         auto muI = mulMatrix(MU, I, param.ea);
@@ -40,7 +41,8 @@ MPEncMatrix inverse(const MPEncMatrix &Q, const MPEncVector &mu,
 }
 
 EncMatrix inverse(const EncMatrix &Q, long mu,
-                  const MatInverseParam &param)
+                  const MatInverseParam &param,
+				  const long ITERATION)
 {
     long MU = mu;
     MDL::EncMatrix M(Q), R(Q);
@@ -55,7 +57,7 @@ EncMatrix inverse(const EncMatrix &Q, long mu,
         MU = MU * MU;
     }
 
-    for (int itr = 1; itr < LR::ITERATION; itr++) {
+    for (int itr = 1; itr < ITERATION; itr++) {
         auto tmpR(R), tmpM(M);
         MDL::Vector<long> mag(param.ea.size(), 2 * MU);
         std::thread computeR([&tmpR, &param, &R, &M, &mag](){
@@ -78,7 +80,6 @@ EncMatrix inverse(const EncMatrix &Q, long mu,
         MU *= MU;
     }
     timer.end();
-    printf("iteration time %f\n", timer.second());
     return R;
 }
 } // namespace MDL
