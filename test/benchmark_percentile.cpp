@@ -75,8 +75,7 @@ std::pair<MDL::EncVector, long>load_file(const EncryptedArray& ea,
     timer.end();
 
     for (auto && wr : workers) wr.join();
-    printf("Encrypt %ld records with %ld workers costed %f sec.\n",
-           data.rows(), WORKER_NR, timer.second());
+    //printf("Encrypt %ld records with %ld workers costed %f sec.\n", data.rows(), WORKER_NR, timer.second());
     return { sum_ctxts(ctxts), data.rows() };
 }
 
@@ -89,35 +88,60 @@ k_percentile(const MDL::EncVector& ctxt,
              long                  k)
 {
     MDL::Timer timer;
-    MDL::EncVector oth(pk);
-    long kpercentile =  k * records_nr / 100;
-    MDL::Vector<long> percentile(ea.size(), kpercentile);
     long plainSpace  = ea.getContext().alMod.getPPowR();
-    std::vector<MDL::GTResult<void>> gtresults(domain);
+
     std::atomic<size_t> counter(0);
+    std::atomic<long> countK(1);
     std::vector<std::thread> workers;
+    std::vector<MDL::EncVector> replicated(ctxt, domain);
+    std::vector<MDL::EncVector> encK(pk, 101);
 
-    oth.pack(percentile, ea);
     timer.start();
-
+    /// replicate all positions
+    /// and prepare all possible Ks.
     for (long wr = 0; wr < WORKER_NR; wr++) {
-        workers.push_back(std::thread([&ctxt, &ea, &counter, &oth, &records_nr,
-                                       &domain, &plainSpace, &gtresults]() {
-            size_t d;
-
-            while ((d = counter.fetch_add(1)) < domain) {
-                auto tmp(ctxt);
-                replicate(ea, tmp, d);
-                MDL::GTInput<void> input = { oth, tmp, records_nr, plainSpace };
-                gtresults[d] = MDL::GT(input, ea);
-            }
-        }));
+	workers.push_back(std::thread[&]() {
+			  size_t d;
+			  while ((d = counter.fetch_add(1)) < domain){
+			      replicate(ea, replicated.at(d), d);
+			  }
+			  long kk;
+			  while ((kk = counK.fetch_add(1)) <= 100) {
+			      MDL::Vector<long> percentile(ea.size(), kk);
+			      encK.at(kk).pack(percentile, ea);
+			  }
+			  });
     }
+    for (auto & wr : workers) wr.join();
 
-    for (auto& wr : workers) wr.join();
+    counter.store(0);
+    workers.clear();
+
+    std::vector<MDL::GTResult<void>> gtresults(domain);
+    for (long kk = 1; kk <= 100; kk++) {
+	MDL::Vector<long> percentile(ea.size(), kk);
+	MDL::GTInput<void> input = { oth, replicated.at(d), records_nr, plainSpace };
+	gtresults[d] = MDL::GT(input, ea);
+    }
+    // oth.pack(percentile, ea);
+
+    // for (long wr = 0; wr < WORKER_NR; wr++) {
+    //     workers.push_back(std::thread([&ctxt, &ea, &counter, &oth, &records_nr,
+    //                                    &domain, &plainSpace, &gtresults]() {
+    //         size_t d;
+    //
+    //         while ((d = counter.fetch_add(1)) < domain) {
+    //             auto tmp(ctxt);
+    //             replicate(ea, tmp, d);
+    //             MDL::GTInput<void> input = { oth, tmp, records_nr, plainSpace };
+    //             gtresults[d] = MDL::GT(input, ea);
+    //         }
+    //     }));
+    // }
+    //
+    // for (auto& wr : workers) wr.join();
     timer.end();
-    printf("call GT on Domain %ld used %ld workers costed %f second\n",
-           records_nr, WORKER_NR, timer.second());
+    printf("call GT on Domain %ld used %ld workers costed %f second\n", records_nr, WORKER_NR, timer.second());
     return gtresults;
 }
 
