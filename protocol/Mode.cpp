@@ -52,41 +52,40 @@ private:
 Mode::Result::ptr computeMode(const Mode::Input &input,
                               const EncryptedArray &ea)
 {
-    auto results = std::make_shared<Mode::ConcreteResult>(input.slotToProcess);
     auto plainSpace = ea.getContext().alMod.getPPowR();
-    std::atomic<long> counter(0);
-    std::atomic<long> counter2(0);
-	std::atomic<bool> ok(false);
-	std::mutex cv_m;
-	std::condition_variable cv;
+    std::atomic<long> counter(1);
     std::vector<std::thread> workers;
-	std::vector<MDL::EncVector> replicated(input.slotToProcess, input.slots);
+    std::vector<MDL::EncVector> replicated(input.slotToProcess, input.slots);
 
     for (long wr = 0; wr < NRWORKER; wr++) {
-        workers.push_back(std::thread([&](long id) {
+        workers.push_back(std::thread([&]() {
             long i;
-			while ((i = counter2.fetch_add(1)) < input.slotToProcess) {
-				replicate(ea, replicated[i], i);
-				if (i + 1 == input.slotToProcess) {
-					ok.store(true);
-					cv.notify_all();
-				}
-			}
-			{
-				std::unique_lock<std::mutex> lk(cv_m);
-				cv.wait(lk, [&]() { return ok.load(); });
-			}
-            while ((i = counter.fetch_add(1)) < input.slotToProcess) {
-                for (long j = i + 1; j < input.slotToProcess; j++) {
-                    GTInput<void> gt = {replicated[i], replicated[j],
-					input.valueDomain, plainSpace};
-                    results->put(GT(gt, ea), i, j);
-                }
-            } }, wr));
+	    while ((i = counter.fetch_add(1)) <= input.slotToProcess) {
+	    	replicate(ea, replicated.at(i - 1), i);
+	    }
+	}));
     }
 
     for (auto &&wr : workers) wr.join();
 
+    workers.clear();
+    counter.store(0);
+
+    auto results = std::make_shared<Mode::ConcreteResult>(input.slotToProcess);
+    for (long wr = 0; wr < NRWORKER; wr++) {
+        workers.push_back(std::thread([&]() {
+       		long i;
+		while ((i = counter.fetch_add(1)) < input.slotToProcess) {
+			for (long j = i + 1; j < input.slotToProcess; j++) {
+				GTInput<void> gt = { replicated.at(i), replicated.at(j), 
+ 						     input.valueDomain, plainSpace };
+				results->put(GT(gt, ea), i, j);
+			}
+		}
+        }));
+    }
+
+    for (auto &&wr : workers) wr.join();
     return results;
 }
 
