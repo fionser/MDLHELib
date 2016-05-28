@@ -9,11 +9,12 @@ class EncVector;
 
 struct PercentileParam {
     const long domain;
+    const long nr_record; 
     const std::vector<MDL::EncVector> &replicated;
     const MDL::EncVector &K;
 };
 
-typedef std::vector<GTResult<void>> PercentileResult
+typedef std::vector<GTResult<void>> PercentileResult;
 
 PercentileResult k_percentile(const PercentileParam &param,
 			      const EncryptedArray &ea,

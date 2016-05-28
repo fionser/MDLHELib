@@ -8,7 +8,7 @@
 #include <utils/timer.hpp>
 #include <utils/encoding.hpp>
 
-#include <protocol/Gt.hpp>
+#include <protocol/Percentile.hpp>
 
 #include <thread>
 #include <atomic>
@@ -17,16 +17,33 @@ long WORKER_NR = 8;
 #else // ifdef FHE_THREADS
 long WORKER_NR = 1;
 #endif // ifdef FHE_THREADS
+std::pair<double, double> mean_std(const std::vector<double> &v) {
+	double m = 0;
+	for (auto vv : v) m += vv;
+	m /= v.size();
+
+	double s = 0;
+	for (auto vv : v) {
+		s += (vv - m) * (vv - m);
+	}
+
+	if (v.size() > 1)
+		s = std::sqrt(s / (v.size() - 1));
+	else
+		s = 0.0;
+
+	return std::make_pair(m, s);
+}
+
+MDL::Timer evalTimer, decTimer;
 
 MDL::EncVector sum_ctxts(const std::vector<MDL::EncVector>& ctxts)
 {
     std::vector<std::thread>    workers;
     std::vector<MDL::EncVector> partials(WORKER_NR, ctxts[0].getPubKey());
     std::atomic<size_t> counter(WORKER_NR);
-    MDL::Timer timer;
 
-    timer.start();
-
+    evalTimer.start();
     for (long i = 0; i < WORKER_NR; i++) {
         partials[i] = ctxts[i];
         workers.push_back(std::move(std::thread([&counter, &ctxts]
@@ -42,18 +59,19 @@ MDL::EncVector sum_ctxts(const std::vector<MDL::EncVector>& ctxts)
     for (auto && wr : workers) wr.join();
 
     for (long i = 1; i < WORKER_NR; i++) partials[0] += partials[i];
-    timer.end();
+    evalTimer.end();
 
     printf("Sum %zd ctxts with %ld workers costed %f sec\n", ctxts.size(),
-           WORKER_NR, timer.second());
+           WORKER_NR, evalTimer.second());
 
     return partials[0];
 }
 
 std::pair<MDL::EncVector, long>load_file(const EncryptedArray& ea,
-                                         const FHEPubKey     & pk)
+                                         const FHEPubKey     & pk,
+					 const long N)
 {
-    auto data = load_csv("adult.data", 2000);
+    auto data = load_csv("adult.data", N);
     std::vector<MDL::EncVector> ctxts(data.rows(), pk);
     std::atomic<size_t> counter(0);
     std::vector<std::thread> workers;
@@ -88,61 +106,54 @@ k_percentile(const MDL::EncVector& ctxt,
              long                  k)
 {
     MDL::Timer timer;
-    long plainSpace  = ea.getContext().alMod.getPPowR();
 
     std::atomic<size_t> counter(0);
     std::atomic<long> countK(1);
     std::vector<std::thread> workers;
-    std::vector<MDL::EncVector> replicated(ctxt, domain);
-    std::vector<MDL::EncVector> encK(pk, 101);
+    std::vector<MDL::EncVector> replicated(domain, ctxt);
+    std::vector<MDL::EncVector> encK(101, pk);
 
-    timer.start();
+    evalTimer.start();
     /// replicate all positions
     /// and prepare all possible Ks.
     for (long wr = 0; wr < WORKER_NR; wr++) {
-	workers.push_back(std::thread[&]() {
+	workers.push_back(std::thread([&]() {
 			  size_t d;
 			  while ((d = counter.fetch_add(1)) < domain){
 			      replicate(ea, replicated.at(d), d);
 			  }
 			  long kk;
-			  while ((kk = counK.fetch_add(1)) <= 100) {
-			      MDL::Vector<long> percentile(ea.size(), kk);
+			  while ((kk = countK.fetch_add(1)) <= 100) {
+			      long _k = static_cast<long>(kk * records_nr / 100.0);
+			      MDL::Vector<long> percentile(ea.size(), _k);
 			      encK.at(kk).pack(percentile, ea);
 			  }
-			  });
+			  }));
     }
     for (auto & wr : workers) wr.join();
 
     counter.store(0);
     workers.clear();
 
-    std::vector<MDL::GTResult<void>> gtresults(domain);
-    for (long kk = 1; kk <= 100; kk++) {
-	MDL::Vector<long> percentile(ea.size(), kk);
-	MDL::GTInput<void> input = { oth, replicated.at(d), records_nr, plainSpace };
-	gtresults[d] = MDL::GT(input, ea);
+    std::vector<MDL::PercentileResult> percentileResults(101);
+    for (long wr = 0; wr < WORKER_NR; wr++) {
+	workers.push_back(std::thread([&]() {
+		size_t d = 1;
+                while ((d = counter.fetch_add(1)) <= 100) {
+			MDL::PercentileParam param = { domain, records_nr, replicated, encK.at(d) };
+			if (d == k)
+				percentileResults.at(d) = k_percentile(param, ea, pk);
+			else
+				k_percentile(param, ea, pk);
+		}
+        }));
     }
-    // oth.pack(percentile, ea);
+    for (auto & wr : workers) wr.join();
 
-    // for (long wr = 0; wr < WORKER_NR; wr++) {
-    //     workers.push_back(std::thread([&ctxt, &ea, &counter, &oth, &records_nr,
-    //                                    &domain, &plainSpace, &gtresults]() {
-    //         size_t d;
-    //
-    //         while ((d = counter.fetch_add(1)) < domain) {
-    //             auto tmp(ctxt);
-    //             replicate(ea, tmp, d);
-    //             MDL::GTInput<void> input = { oth, tmp, records_nr, plainSpace };
-    //             gtresults[d] = MDL::GT(input, ea);
-    //         }
-    //     }));
-    // }
-    //
-    // for (auto& wr : workers) wr.join();
-    timer.end();
-    printf("call GT on Domain %ld used %ld workers costed %f second\n", records_nr, WORKER_NR, timer.second());
-    return gtresults;
+    evalTimer.end();
+    //printf("Domain %ld, Workers %ld Second %f\n", 
+    //	   records_nr, WORKER_NR, timer.second());
+    return percentileResults.at(k);
 }
 
 void decrypt(const std::vector<MDL::GTResult<void>>& gtresults,
@@ -152,9 +163,8 @@ void decrypt(const std::vector<MDL::GTResult<void>>& gtresults,
     std::vector<bool>   results(gtresults.size());
     std::atomic<size_t> counter(0);
     std::vector<std::thread> workers;
-    MDL::Timer timer;
 
-    timer.start();
+    decTimer.start();
 
     for (int wr = 0; wr < WORKER_NR; wr++) {
         workers.push_back(std::thread([&gtresults, &ea, &sk,
@@ -170,7 +180,7 @@ void decrypt(const std::vector<MDL::GTResult<void>>& gtresults,
     }
 
     for (auto && wr : workers) wr.join();
-    timer.end();
+    decTimer.end();
     bool prev = true;
 
     for (size_t i = 0; i < results.size(); i++) {
@@ -182,13 +192,14 @@ void decrypt(const std::vector<MDL::GTResult<void>>& gtresults,
 }
 
 int main(int argc, char *argv[]) {
-    long m, p, r, L;
+    long m, p, r, L, N;
     ArgMapping argmap;
 
     argmap.arg("m", m, "m");
     argmap.arg("L", L, "L");
     argmap.arg("p", p, "p");
     argmap.arg("r", r, "r");
+    argmap.arg("N", N, "N");
     argmap.parse(argc, argv);
 
     FHEcontext context(m, p, r);
@@ -201,13 +212,26 @@ int main(int argc, char *argv[]) {
     auto G = context.alMod.getFactorsOverZZ()[0];
     EncryptedArray ea(context, G);
 
-    auto data      = load_file(ea, pk);
-    long kpercent  = 50;
-    auto gtresults = k_percentile(data.first,
-                                  pk, ea,
-                                  data.second,
-                                  100,
-                                  kpercent);
-    decrypt(gtresults, sk, ea, kpercent);
+    for (long N : {-1}) {
+	std::vector<double> evalTimes, decTimes;
+	for (long trial = 0; trial < 10; trial++) {
+		auto data      = load_file(ea, pk, N);
+		long kpercent  = 50;
+		auto gtresults = k_percentile(data.first,
+				pk, ea,
+				data.second,
+				100,
+				kpercent);
+		decrypt(gtresults, sk, ea, kpercent);
+        	evalTimes.push_back(evalTimer.second());
+        	decTimes.push_back(decTimer.second());
+		evalTimer.reset();
+		decTimer.reset();
+	} 
+	auto ms1 = mean_std(evalTimes);
+	auto ms2 = mean_std(decTimes);
+	printf("%ld %f +- %f\n", N, ms1.first, ms1.second);
+	printf("%f +- %f\n", ms2.first, ms2.second);
+    }
     return 0;
 }
