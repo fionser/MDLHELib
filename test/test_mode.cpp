@@ -88,13 +88,13 @@ int main(int argc, char *argv[]) {
 
     _ATTRIBUTE = 0;
 
-    for (long N : {500, 1000, 10000, 20000, -1}) {
+    for (long N : {-1}) {
 	    auto category = load_csv("category.data", N);
 	    std::vector<double> evalTimes, decTimes;
             long mode;
             for (long trial = 0; trial < 10; trial++){
 		    auto joined = encrypt(category, pk, ea);
-		    MDL::Mode::Input input {joined, domainOfCategory, N};
+		    MDL::Mode::Input input {joined, domainOfCategory, category.rows()};
 
 		    evalTimer.start();
 		    auto modeResults = MDL::computeMode(input, ea);

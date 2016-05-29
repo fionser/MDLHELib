@@ -67,7 +67,6 @@ Mode::Result::ptr computeMode(const Mode::Input &input,
     }
 
     for (auto &&wr : workers) wr.join();
-
     workers.clear();
     counter.store(0);
 
@@ -113,7 +112,6 @@ long argMode(const Mode::Result::ptr results,
     }
 
     for (auto &&wr : workers) wr.join();
-
     for (long i = 0; i < size; i++) {
         bool flag = true;
         for (long j = 0; j < size; j++) {
